@@ -22,6 +22,10 @@
 	NetId3:
 	Time spent: 10 hours
 
+/*
+	2/5/14 - Worked for 45 min
+*/	
+
 /******************
  * Files to submit
  ******************/
