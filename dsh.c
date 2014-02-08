@@ -69,7 +69,7 @@ void spawn_job(job_t *j, bool fg)
           case 0: /* child process  */
             p->pid = getpid();	    
             new_child(j, p, fg);
-            execvp(p->argv[0], argv)
+            execvp(p->argv[0], p->argv);
             
 	    /* YOUR CODE HERE?  Child-side code for new process. */
             perror("New child should have done an exec");
@@ -158,6 +158,7 @@ int main()
          * final code */
         if(PRINT_INFO) print_job(j);
 
+        spawn_job(j, false);
         /* Your code goes here */
         /* You need to loop through jobs list since a command line can contain ;*/
         /* Check for built-in commands */
