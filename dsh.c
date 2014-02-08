@@ -52,7 +52,7 @@ void new_child(job_t *j, process_t *p, bool fg)
 void spawn_job(job_t *j, bool fg) 
 {
 
-	pid_t pid;
+	pid_t pid; //
 	process_t *p;
 
 	for(p = j->first_process; p; p = p->next) {
@@ -69,6 +69,7 @@ void spawn_job(job_t *j, bool fg)
           case 0: /* child process  */
             p->pid = getpid();	    
             new_child(j, p, fg);
+            execvp(p->argv[0], argv)
             
 	    /* YOUR CODE HERE?  Child-side code for new process. */
             perror("New child should have done an exec");
@@ -109,12 +110,12 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv)
 
         if (!strcmp(argv[0], "quit")) {
             /* Your code here */
-            quit();
+          //free jobs here
             exit(EXIT_SUCCESS);
 	}
         else if (!strcmp("jobs", argv[0])) {
             /* Your code here */
-            jobs();
+            //jobs(argv[0]);
             return true;
         }
 	else if (!strcmp("cd", argv[0])) {
@@ -173,7 +174,7 @@ void jobs(job_t* myJob){
 
   while(myJob->next != NULL){
     printf("%s \n", myJob->commandinfo);
-    int stat = myJob->first_process->status;
+    int stat = (myJob->first_process)->status;
     printf("%d \n", stat);
     myJob = myJob->next;
   }
