@@ -152,7 +152,8 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv)
 char* promptmsg() 
 {
     /* Modify this to include pid */
-	return "dsh$ ";
+  //char* returnStr = "RyanRyan dsh %d $ ", 
+	return "RyanRyan dsh $ ";
 }
 
 int main() 
@@ -163,29 +164,30 @@ int main()
 
 	while(1) {
         job_t *j = NULL;
+
 		if(!(j = readcmdline(promptmsg()))) {
-			if (feof(stdin)) { /* End of file (ctrl-d) */
+			printf("blah\n");
+      if (feof(stdin)) { /* End of file (ctrl-d) */
 				fflush(stdout);
 				printf("\n");
 				exit(EXIT_SUCCESS);
-           		}
+      }
 			continue; /* NOOP; user entered return or spaces with return */
 		}
 
-        /* Only for debugging purposes to show parser output; turn off in the
-         * final code */
-        if(PRINT_INFO) print_job(j);
-
+    /* Only for debugging purposes to show parser output; turn off in the
+     * final code */
+    if(PRINT_INFO) print_job(j);
         spawn_job(j, false);
-        /* Your code goes here */
-        /* You need to loop through jobs list since a command line can contain ;*/
-        /* Check for built-in commands */
-        /* If not built-in */
-            /* If job j runs in foreground */
-            /* spawn_job(j,true) */
-            /* else */
-            /* spawn_job(j,false) */
-    }
+    /* Your code goes here */
+    /* You need to loop through jobs list since a command line can contain ;*/
+    /* Check for built-in commands */
+    /* If not built-in */
+        /* If job j runs in foreground */
+        /* spawn_job(j,true) */
+        /* else */
+        /* spawn_job(j,false) */
+  }
 }
 
 
