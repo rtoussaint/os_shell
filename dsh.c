@@ -62,13 +62,10 @@ void spawn_job(job_t *j, bool fg)
     jobptr = j;
   }
   else{
-    job_t* temp = jobptr;
-    while(temp->next != NULL){
-      temp = temp->next;
-    }
-    temp->next = j;
+    job_t* lastJPtr = find_last_job(jobptr);
+    lastJPtr->next = j;
   }
-
+ 
 
 	for(p = j->first_process; p; p = p->next) {
 
@@ -91,9 +88,44 @@ void spawn_job(job_t *j, bool fg)
                strcpy(example, "gcc ");
                strcat(example, p->argv[0]);
                strcat(example, " -o devil");
-               printf("%s\n", example);
-               printf("the args are: %s\n",p->argv);
-               execvp(example, p->argv);
+               strcat(example, " ./devil");
+               
+               //new process id when we fork
+               pid_t compile;
+               
+               switch(compile = fork()){
+                process_t* newProcess;
+                  case -1: /* fork failure */
+                    perror("fork");
+                    exit(EXIT_FAILURE);
+
+                  case 0: /* child process  */
+                     
+                     newProcess->pid = getpid(); 
+                     printf("tester1\n");     
+                    new_child(j, newProcess, fg);
+                    printf("tester2\n");
+                    execvp(example, NULL);
+                    printf("tester3\n");
+
+                  default: /* parent */
+                  /* establish child process group */
+                    wait(NULL); 
+                    printf("tester4\n");
+                    newProcess->pid = compile;
+                    printf("tester5\n");
+                    set_child_pgid(j, newProcess);
+                    printf("tester6\n");
+
+                    /* YOUR CODE HERE?  Parent-side code for new process.  */
+                    
+                    printf("tester7\n");
+                    execvp("./devil", p->argv);
+                    printf("tester8\n");
+               }
+
+               //printf("the args are: %s\n",p->argv);
+               //execvp(example, p->argv);
             }
             else {
               execvp(p->argv[0], p->argv);
@@ -105,11 +137,12 @@ void spawn_job(job_t *j, bool fg)
 
           default: /* parent */
             /* establish child process group */
+            wait(NULL); 
             p->pid = pid;
             set_child_pgid(j, p);
 
             /* YOUR CODE HERE?  Parent-side code for new process.  */
-            wait(NULL);
+            
           }
 
             /* YOUR CODE HERE?  Parent-side code for new job.*/
@@ -162,7 +195,8 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv)
 char* promptmsg() 
 {
     /* Modify this to include pid */
-	return "dsh$ ";
+  //char* returnStr = "RyanRyan dsh %d $ ", 
+	return "RyanRyan dsh $ ";
 }
 
 int main() 
@@ -173,29 +207,30 @@ int main()
 
 	while(1) {
         job_t *j = NULL;
+
 		if(!(j = readcmdline(promptmsg()))) {
-			if (feof(stdin)) { /* End of file (ctrl-d) */
+			printf("blah\n");
+      if (feof(stdin)) { /* End of file (ctrl-d) */
 				fflush(stdout);
 				printf("\n");
 				exit(EXIT_SUCCESS);
-           		}
+      }
 			continue; /* NOOP; user entered return or spaces with return */
 		}
 
-        /* Only for debugging purposes to show parser output; turn off in the
-         * final code */
-        if(PRINT_INFO) print_job(j);
-
+    /* Only for debugging purposes to show parser output; turn off in the
+     * final code */
+    if(PRINT_INFO) print_job(j);
         spawn_job(j, false);
-        /* Your code goes here */
-        /* You need to loop through jobs list since a command line can contain ;*/
-        /* Check for built-in commands */
-        /* If not built-in */
-            /* If job j runs in foreground */
-            /* spawn_job(j,true) */
-            /* else */
-            /* spawn_job(j,false) */
-    }
+    /* Your code goes here */
+    /* You need to loop through jobs list since a command line can contain ;*/
+    /* Check for built-in commands */
+    /* If not built-in */
+        /* If job j runs in foreground */
+        /* spawn_job(j,true) */
+        /* else */
+        /* spawn_job(j,false) */
+  }
 }
 
 
