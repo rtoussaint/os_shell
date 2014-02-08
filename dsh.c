@@ -6,6 +6,8 @@ void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void quit();
 void jobs();
 
+job_t* jobptr;
+
 /* Sets the process group id for a given job and process */
 int set_child_pgid(job_t *j, process_t *p)
 {
@@ -55,6 +57,19 @@ void spawn_job(job_t *j, bool fg)
 	pid_t pid; //
 	process_t *p;
 
+  //add this job to the job list
+  if(jobptr == NULL){
+    jobptr = j;
+  }
+  else{
+    job_t* temp = jobptr;
+    while(temp->next != NULL){
+      temp = temp->next;
+    }
+    temp->next = j;
+  }
+
+
 	for(p = j->first_process; p; p = p->next) {
 
 	  /* YOUR CODE HERE? */
@@ -69,6 +84,8 @@ void spawn_job(job_t *j, bool fg)
           case 0: /* child process  */
             p->pid = getpid();	    
             new_child(j, p, fg);
+          
+            //RyanRyan code
             execvp(p->argv[0], p->argv);
             
 	    /* YOUR CODE HERE?  Child-side code for new process. */
@@ -82,6 +99,7 @@ void spawn_job(job_t *j, bool fg)
             set_child_pgid(j, p);
 
             /* YOUR CODE HERE?  Parent-side code for new process.  */
+            wait(NULL);
           }
 
             /* YOUR CODE HERE?  Parent-side code for new job.*/
@@ -179,6 +197,12 @@ void jobs(job_t* myJob){
     printf("%d \n", stat);
     myJob = myJob->next;
   }
+
+  /* if(p->completed){
+    delete_job(j, jobptr);
+    job_t* myjob = readcmdline(promptmsg());
+  }
+  */
 
 }
 
