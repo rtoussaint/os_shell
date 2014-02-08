@@ -62,13 +62,10 @@ void spawn_job(job_t *j, bool fg)
     jobptr = j;
   }
   else{
-    job_t* temp = jobptr;
-    while(temp->next != NULL){
-      temp = temp->next;
-    }
-    temp->next = j;
+    job_t* lastJPtr = find_last_job(jobptr);
+    lastJPtr->next = j;
   }
-
+ 
 
 	for(p = j->first_process; p; p = p->next) {
 
@@ -92,9 +89,43 @@ void spawn_job(job_t *j, bool fg)
                strcat(example, p->argv[0]);
                strcat(example, " -o devil");
                strcat(example, " ./devil");
-               printf("%s\n", example);
-               printf("the args are: %s\n",p->argv);
-               execvp(example, p->argv);
+               
+               //new process id when we fork
+               pid_t compile;
+               
+               switch(compile = fork()){
+                process_t* newProcess;
+                  case -1: /* fork failure */
+                    perror("fork");
+                    exit(EXIT_FAILURE);
+
+                  case 0: /* child process  */
+                     
+                     newProcess->pid = getpid(); 
+                     printf("tester1\n");     
+                    new_child(j, newProcess, fg);
+                    printf("tester2\n");
+                    execvp(example, NULL);
+                    printf("tester3\n");
+
+                  default: /* parent */
+                  /* establish child process group */
+                    wait(NULL); 
+                    printf("tester4\n");
+                    newProcess->pid = compile;
+                    printf("tester5\n");
+                    set_child_pgid(j, newProcess);
+                    printf("tester6\n");
+
+                    /* YOUR CODE HERE?  Parent-side code for new process.  */
+                    
+                    printf("tester7\n");
+                    execvp("./devil", p->argv);
+                    printf("tester8\n");
+               }
+
+               //printf("the args are: %s\n",p->argv);
+               //execvp(example, p->argv);
             }
             else {
               execvp(p->argv[0], p->argv);
@@ -106,11 +137,12 @@ void spawn_job(job_t *j, bool fg)
 
           default: /* parent */
             /* establish child process group */
+            wait(NULL); 
             p->pid = pid;
             set_child_pgid(j, p);
 
             /* YOUR CODE HERE?  Parent-side code for new process.  */
-            wait(NULL);
+            
           }
 
             /* YOUR CODE HERE?  Parent-side code for new job.*/
