@@ -3,6 +3,8 @@
 void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
+void quit();
+void jobs();
 
 /* Sets the process group id for a given job and process */
 int set_child_pgid(job_t *j, process_t *p)
@@ -107,10 +109,12 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv)
 
         if (!strcmp(argv[0], "quit")) {
             /* Your code here */
+            quit();
             exit(EXIT_SUCCESS);
 	}
         else if (!strcmp("jobs", argv[0])) {
             /* Your code here */
+            jobs();
             return true;
         }
 	else if (!strcmp("cd", argv[0])) {
@@ -162,4 +166,24 @@ int main()
             /* else */
             /* spawn_job(j,false) */
     }
+}
+
+
+void jobs(job_t* myJob){
+
+  while(myJob->next != NULL){
+    printf("%s \n", myJob->commandinfo);
+    int stat = myJob->first_process->status;
+    printf("%d \n", stat);
+    myJob = myJob->next;
+  }
+
+}
+
+
+void quit() {
+  if (feof(stdin)) { /* End of file (ctrl-d) */
+    fflush(stdout);
+    printf("\n");
+  }
 }
