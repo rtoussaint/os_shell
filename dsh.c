@@ -5,6 +5,7 @@ void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void quit();
 void jobs();
+void compileC(job_t* j, process_t* p, bool fg);
 
 job_t* jobptr;
 
@@ -12,8 +13,8 @@ job_t* jobptr;
 int set_child_pgid(job_t *j, process_t *p)
 {
     if (j->pgid < 0) /* first child: use its pid for job pgid */
-        j->pgid = p->pid;
-    return(setpgid(p->pid,j->pgid));
+  j->pgid = p->pid;
+  return(setpgid(p->pid,j->pgid));
 }
 
 /* Creates the context for a new child by setting the pid, pgid and tcsetpgrp */
@@ -29,16 +30,16 @@ void new_child(job_t *j, process_t *p, bool fg)
           * potential race conditions.  
           * */
 
-         p->pid = getpid();
+          p->pid = getpid();
 
          /* also establish child process group in child to avoid race (if parent has not done it yet). */
-         set_child_pgid(j, p);
+          set_child_pgid(j, p);
 
          if(fg) // if fg is set
 		seize_tty(j->pgid); // assign the terminal
 
          /* Set the handling for job control signals back to the default. */
-         signal(SIGTTOU, SIG_DFL);
+ signal(SIGTTOU, SIG_DFL);
 }
 
 /* Spawning a process with job control. fg is true if the 
@@ -51,8 +52,8 @@ void new_child(job_t *j, process_t *p, bool fg)
  * subsequent processes in a pipeline.
  * */
 
-void spawn_job(job_t *j, bool fg) 
-{
+ void spawn_job(job_t *j, bool fg) 
+ {
 
 	pid_t pid; //
 	process_t *p;
@@ -65,97 +66,57 @@ void spawn_job(job_t *j, bool fg)
     job_t* lastJPtr = find_last_job(jobptr);
     lastJPtr->next = j;
   }
- 
 
-	for(p = j->first_process; p; p = p->next) {
+
+  for(p = j->first_process; p; p = p->next) {
 
 	  /* YOUR CODE HERE? */
 	  /* Builtin commands are already taken care earlier */
-	  
-	  switch (pid = fork()) {
+
+   switch (pid = fork()) {
 
           case -1: /* fork failure */
-            perror("fork");
-            exit(EXIT_FAILURE);
+    perror("fork");
+    exit(EXIT_FAILURE);
 
           case 0: /* child process  */
-            p->pid = getpid();	    
-            new_child(j, p, fg);
-          
-            //RyanRyan code
-            if(endswith(p->argv[0],".c")) {
-               char example[MAX_LEN_FILENAME];
-               strcpy(example, "gcc ");
-               strcat(example, p->argv[0]);
-               strcat(example, " -o devil");
-               strcat(example, " ./devil");
-               
-               //new process id when we fork
-               pid_t compile;
-               
-               switch(compile = fork()){
-                process_t* newProcess;
-                  case -1: /* fork failure */
-                    perror("fork");
-                    exit(EXIT_FAILURE);
+    p->pid = getpid();	    
+    new_child(j, p, fg);
 
-                  case 0: /* child process  */
-                     
-                     newProcess->pid = getpid(); 
-                     printf("tester1\n");     
-                    new_child(j, newProcess, fg);
-                    printf("tester2\n");
-                    execvp(example, NULL);
-                    printf("tester3\n");
+            //Need to compile C Program
+    if(endswith(p->argv[0],".c")) {
+      compileC(j, p, fg);
 
-                  default: /* parent */
-                  /* establish child process group */
-                    wait(NULL); 
-                    printf("tester4\n");
-                    newProcess->pid = compile;
-                    printf("tester5\n");
-                    set_child_pgid(j, newProcess);
-                    printf("tester6\n");
-
-                    /* YOUR CODE HERE?  Parent-side code for new process.  */
-                    
-                    printf("tester7\n");
-                    execvp("./devil", p->argv);
-                    printf("tester8\n");
-               }
-
-               //printf("the args are: %s\n",p->argv);
-               //execvp(example, p->argv);
-            }
-            else {
-              execvp(p->argv[0], p->argv);
-            }
+    }
+    else {
+      execvp(p->argv[0], p->argv);
+    }
 	    /* YOUR CODE HERE?  Child-side code for new process. */
-            perror("New child should have done an exec");
+    perror("New child should have done an exec");
             exit(EXIT_FAILURE);  /* NOT REACHED */
             break;    /* NOT REACHED */
 
           default: /* parent */
             /* establish child process group */
-            wait(NULL); 
-            p->pid = pid;
-            set_child_pgid(j, p);
+    wait(NULL); 
+    p->pid = pid;
+    set_child_pgid(j, p);
 
             /* YOUR CODE HERE?  Parent-side code for new process.  */
-            
-          }
+
+  }
 
             /* YOUR CODE HERE?  Parent-side code for new job.*/
 	    seize_tty(getpid()); // assign the terminal back to dsh
 
-	}
-}
+   }
+ }
 
 /* Sends SIGCONT signal to wake up the blocked job */
-void continue_job(job_t *j) 
-{
-     if(kill(-j->pgid, SIGCONT) < 0)
-          perror("kill(SIGCONT)");
+ void continue_job(job_t *j) 
+ {
+   if(kill(-j->pgid, SIGCONT) < 0)
+    perror("kill(SIGCONT)");
 }
 
 
@@ -163,31 +124,31 @@ void continue_job(job_t *j)
  * builtin_cmd - If the user has typed a built-in command then execute
  * it immediately.  
  */
-bool builtin_cmd(job_t *last_job, int argc, char **argv) 
-{
+ bool builtin_cmd(job_t *last_job, int argc, char **argv) 
+ {
 
 	    /* check whether the cmd is a built in command
         */
 
-        if (!strcmp(argv[0], "quit")) {
+  if (!strcmp(argv[0], "quit")) {
             /* Your code here */
           //free jobs here
-            exit(EXIT_SUCCESS);
-	}
-        else if (!strcmp("jobs", argv[0])) {
+    exit(EXIT_SUCCESS);
+  }
+  else if (!strcmp("jobs", argv[0])) {
             /* Your code here */
             //jobs(argv[0]);
-            return true;
-        }
-	else if (!strcmp("cd", argv[0])) {
+    return true;
+  }
+  else if (!strcmp("cd", argv[0])) {
             /* Your code here */
-        }
-        else if (!strcmp("bg", argv[0])) {
+  }
+  else if (!strcmp("bg", argv[0])) {
             /* Your code here */
-        }
-        else if (!strcmp("fg", argv[0])) {
+  }
+  else if (!strcmp("fg", argv[0])) {
             /* Your code here */
-        }
+  }
         return false;       /* not a builtin command */
 }
 
@@ -206,22 +167,22 @@ int main()
 	DEBUG("Successfully initialized\n");
 
 	while(1) {
-        job_t *j = NULL;
+    job_t *j = NULL;
 
-		if(!(j = readcmdline(promptmsg()))) {
-			printf("blah\n");
+    if(!(j = readcmdline(promptmsg()))) {
+     printf("blah\n");
       if (feof(stdin)) { /* End of file (ctrl-d) */
-				fflush(stdout);
-				printf("\n");
-				exit(EXIT_SUCCESS);
+     fflush(stdout);
+     printf("\n");
+     exit(EXIT_SUCCESS);
       }
 			continue; /* NOOP; user entered return or spaces with return */
-		}
+    }
 
     /* Only for debugging purposes to show parser output; turn off in the
      * final code */
-    if(PRINT_INFO) print_job(j);
-        spawn_job(j, false);
+      if(PRINT_INFO) print_job(j);
+      spawn_job(j, false);
     /* Your code goes here */
     /* You need to loop through jobs list since a command line can contain ;*/
     /* Check for built-in commands */
@@ -254,7 +215,59 @@ void jobs(job_t* myJob){
 
 void quit() {
   if (feof(stdin)) { /* End of file (ctrl-d) */
-    fflush(stdout);
-    printf("\n");
-  }
+  fflush(stdout);
+  printf("\n");
 }
+}
+
+
+
+void compileC(job_t* j, process_t* p, bool fg){
+  char example[MAX_LEN_FILENAME];
+  strcpy(example, "gcc ");
+  strcat(example, p->argv[0]);
+  strcat(example, " -o devil");
+  process_t* newProcess = NULL;
+  printf("-----: %s \n",example );
+  printf("1\n");
+  //new process id when we fork
+  pid_t compile;
+  printf("2\n");          
+  switch(compile = fork()){
+    printf("3\n");
+    
+  
+    case -1: /* fork failure */
+    perror("fork");
+    exit(EXIT_FAILURE);
+    printf("4\n");
+    case 0: /* child process  */
+    printf("5 --- process id: %d \n", newProcess->pid);
+    newProcess->pid = getpid(); 
+    printf("6\n");
+    new_child(j, newProcess, fg);
+    printf("7\n");
+    execvp(example, NULL);
+
+    default: /* parent */
+    /* establish child process group */
+    printf("8\n");
+    wait(NULL); 
+
+    newProcess->pid = compile;
+    printf("9\n");
+    set_child_pgid(j, newProcess);
+    printf("10\n");
+    /* YOUR CODE HERE?  Parent-side code for new process.  */
+    execvp("./devil", p->argv);
+  }
+
+}
+
+
+
+
+
+
+
+
