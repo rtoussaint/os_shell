@@ -91,7 +91,6 @@ void spawn_job(job_t *j, bool fg)
                strcpy(example, "gcc ");
                strcat(example, p->argv[0]);
                strcat(example, " -o devil");
-               strcat(example, " ./devil");
                printf("%s\n", example);
                printf("the args are: %s\n",p->argv);
                execvp(example, p->argv);
