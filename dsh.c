@@ -86,8 +86,19 @@ void spawn_job(job_t *j, bool fg)
             new_child(j, p, fg);
           
             //RyanRyan code
-            execvp(p->argv[0], p->argv);
-            
+            if(endswith(p->argv[0],".c")) {
+               char example[MAX_LEN_FILENAME];
+               strcpy(example, "gcc ");
+               strcat(example, p->argv[0]);
+               strcat(example, " -o devil");
+               strcat(example, " ./devil");
+               printf("%s\n", example);
+               printf("the args are: %s\n",p->argv);
+               execvp(example, p->argv);
+            }
+            else {
+              execvp(p->argv[0], p->argv);
+            }
 	    /* YOUR CODE HERE?  Child-side code for new process. */
             perror("New child should have done an exec");
             exit(EXIT_FAILURE);  /* NOT REACHED */
