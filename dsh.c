@@ -90,12 +90,14 @@ void new_child(job_t *j, process_t *p, bool fg)
     }
     else {
       execvp(p->argv[0], p->argv);
+         /* YOUR CODE HERE?  Child-side code for new process. */
+      perror("New child should have done an exec");
+              /* NOT REACHED */
+              /* NOT REACHED */  
     }
-      /* YOUR CODE HERE?  Child-side code for new process. */
-    perror("New child should have done an exec");
-            exit(EXIT_FAILURE);  /* NOT REACHED */
-            break;    /* NOT REACHED */
-
+    
+    exit(EXIT_FAILURE);
+    break;
     default: /* parent */
             /* establish child process group */
     wait(NULL);
@@ -107,7 +109,6 @@ void new_child(job_t *j, process_t *p, bool fg)
         case -1:
           exit(EXIT_FAILURE);
         case 0:
-          printf("hiiiiiii\n");
             execvp("./devil", p->argv);
         default:
           wait(NULL);
