@@ -170,8 +170,10 @@ char* promptmsg(int my_pid)
   //char* returnStr = "RyanRyan dsh %d $ ", 
  char my_prompt[50];
  strcpy(my_prompt, "dsh ");
- char convertToString[10000];
- convertToString = itoa(my_pid, convertToString, 10);
+ char convertToString[15];
+ 
+ sprintf(convertToString, "%d", my_pid);
+
  strcat(my_prompt, convertToString);
  strcat(my_prompt, " $");
   return my_prompt;
@@ -187,7 +189,7 @@ int main()
   while(1) {
     job_t *j = NULL;
     int get_pid = getpid();
-    printf("PID %d\n", get_pid);
+    //printf("PID %d\n", get_pid);
     if(!(j = readcmdline(promptmsg(get_pid)))){
      printf("blah\n");
       if (feof(stdin)) { /* End of file (ctrl-d) */
