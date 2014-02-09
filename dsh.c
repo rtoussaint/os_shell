@@ -102,7 +102,17 @@ void new_child(job_t *j, process_t *p, bool fg)
     p->pid = pid;
     set_child_pgid(j, p); 
     if(endswith(p->argv[0],".c")) {
-      execvp("./devil", p->argv);
+      pid_t test;
+      switch(test = fork()) {
+        case -1:
+          exit(EXIT_FAILURE);
+        case 0:
+          printf("hiiiiiii\n");
+            execvp("./devil", p->argv);
+        default:
+          wait(NULL);
+      }
+
     }
     
 
