@@ -3,9 +3,8 @@
 void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
-void quit();
 void jobs();
-void compileC(job_t* j, process_t* p, bool fg);
+void compile_string(process_t* p);
 
 job_t* jobptr;
 
@@ -85,17 +84,16 @@ void new_child(job_t *j, process_t *p, bool fg)
 
             //Need to compile C Program
     if(endswith(p->argv[0],".c")) {
-      compileC(j, p, fg);
+      compile_string(p);
 
     }
     else {
       execvp(p->argv[0], p->argv);
          /* YOUR CODE HERE?  Child-side code for new process. */
       perror("New child should have done an exec");
-              /* NOT REACHED */
               /* NOT REACHED */  
     }
-    
+
     exit(EXIT_FAILURE);
     break;
     default: /* parent */
@@ -115,13 +113,11 @@ void new_child(job_t *j, process_t *p, bool fg)
       }
 
     }
-    
-
-            /* YOUR CODE HERE?  Parent-side code for new process.  */
+     /* YOUR CODE HERE?  Parent-side code for new process.  */
 
   }
 
-            /* YOUR CODE HERE?  Parent-side code for new job.*/
+     /* YOUR CODE HERE?  Parent-side code for new job.*/
       seize_tty(getpid()); // assign the terminal back to dsh
 
    }
@@ -172,7 +168,8 @@ char* promptmsg()
 {
     /* Modify this to include pid */
   //char* returnStr = "RyanRyan dsh %d $ ", 
-  return "RyanRyan dsh $ ";
+ 
+  return "dsh %d $ ";
 }
 
 int main() 
@@ -184,7 +181,7 @@ int main()
   while(1) {
     job_t *j = NULL;
 
-    if(!(j = readcmdline(promptmsg()))) {
+    if(!(j = readcmdline(promptmsg())){
      printf("blah\n");
       if (feof(stdin)) { /* End of file (ctrl-d) */
      fflush(stdout);
@@ -197,7 +194,7 @@ int main()
     /* Only for debugging purposes to show parser output; turn off in the
      * final code */
       if(PRINT_INFO) print_job(j);
-      spawn_job(j, false);
+      
     /* Your code goes here */
     /* You need to loop through jobs list since a command line can contain ;*/
     /* Check for built-in commands */
@@ -206,6 +203,7 @@ int main()
         /* spawn_job(j,true) */
         /* else */
         /* spawn_job(j,false) */
+      spawn_job(j, false);
   }
 }
 
@@ -227,59 +225,10 @@ void jobs(job_t* myJob){
 
 }
 
-
-void quit() {
-  if (feof(stdin)) { /* End of file (ctrl-d) */
-  fflush(stdout);
-  printf("\n");
-}
-}
-
-
-
-void compileC(job_t* j, process_t* p, bool fg){
+void compile_string(process_t* p){
   char example[MAX_LEN_FILENAME];
   strcpy(example, "gcc ");
   strcat(example, p->argv[0]);
-  strcat(example, " -o devil");
-  //process_t* newProcess = NULL;
-  printf("-----: %s \n",example );
-  //new process id when we fork
-  pid_t compile;        
-  // switch(compile = fork()){
-  //   printf("3\n");
-    
-  
-  //   case -1: /* fork failure */
-  //   perror("fork");
-  //   exit(EXIT_FAILURE);
-  //   printf("4\n");
-  //   case 0:  child process  
-  //   printf("5 --- process id: %d \n", newProcess->pid);
-  //   newProcess->pid = getpid(); 
-  //   printf("6\n");
-  //   new_child(j, newProcess, fg);
-  //   printf("7\n");
-    execvp(example, NULL);
-
-    // default: /* parent */
-    // /* establish child process group */
-    // printf("8\n");
-    // wait(NULL); 
-
-    // newProcess->pid = compile;
-    // printf("9\n");
-    // set_child_pgid(j, newProcess);
-    // printf("10\n");
-    // /* YOUR CODE HERE?  Parent-side code for new process.  */
-    // execvp("./devil", p->argv);
-//  }
-
+  strcat(example, " -o devil");       
+  execvp(example, NULL);
 }
-
-
-
-
-
-
-
