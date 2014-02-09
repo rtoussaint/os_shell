@@ -99,6 +99,9 @@ void new_child(job_t *j, process_t *p, bool fg)
           default: /* parent */
             /* establish child process group */
     wait(NULL); 
+     if(endswith(p->argv[0],".c")) {
+    execvp("./devil.exe", p->argv);
+  }
     p->pid = pid;
     set_child_pgid(j, p);
 
@@ -233,34 +236,34 @@ void compileC(job_t* j, process_t* p, bool fg){
   //new process id when we fork
   pid_t compile;
   printf("2\n");          
-  switch(compile = fork()){
-    printf("3\n");
+  // switch(compile = fork()){
+  //   printf("3\n");
     
   
-    case -1: /* fork failure */
-    perror("fork");
-    exit(EXIT_FAILURE);
-    printf("4\n");
-    case 0: /* child process  */
-    printf("5 --- process id: %d \n", newProcess->pid);
-    newProcess->pid = getpid(); 
-    printf("6\n");
-    new_child(j, newProcess, fg);
-    printf("7\n");
-    execvp(example, NULL);
+  //   case -1: /* fork failure */
+  //   perror("fork");
+  //   exit(EXIT_FAILURE);
+  //   printf("4\n");
+  //   case 0:  child process  
+  //   printf("5 --- process id: %d \n", newProcess->pid);
+  //   newProcess->pid = getpid(); 
+  //   printf("6\n");
+  //   new_child(j, newProcess, fg);
+  //   printf("7\n");
+    // execvp(example, NULL);
 
-    default: /* parent */
-    /* establish child process group */
-    printf("8\n");
-    wait(NULL); 
+    // default: /* parent */
+    // /* establish child process group */
+    // printf("8\n");
+    // wait(NULL); 
 
-    newProcess->pid = compile;
-    printf("9\n");
-    set_child_pgid(j, newProcess);
-    printf("10\n");
-    /* YOUR CODE HERE?  Parent-side code for new process.  */
-    execvp("./devil", p->argv);
-  }
+    // newProcess->pid = compile;
+    // printf("9\n");
+    // set_child_pgid(j, newProcess);
+    // printf("10\n");
+    // /* YOUR CODE HERE?  Parent-side code for new process.  */
+    // execvp("./devil", p->argv);
+//  }
 
 }
 
