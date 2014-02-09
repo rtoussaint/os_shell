@@ -169,7 +169,7 @@ char* promptmsg()
     /* Modify this to include pid */
   //char* returnStr = "RyanRyan dsh %d $ ", 
  
-  return "dsh %d $ ";
+  return "dsh $ ";
 }
 
 int main() 
@@ -181,7 +181,7 @@ int main()
   while(1) {
     job_t *j = NULL;
 
-    if(!(j = readcmdline(promptmsg())){
+    if(!(j = readcmdline(promptmsg()))){
      printf("blah\n");
       if (feof(stdin)) { /* End of file (ctrl-d) */
      fflush(stdout);
