@@ -152,7 +152,8 @@ void new_child(job_t *j, process_t *p, bool fg)
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
-            /* Your code here */
+          chdir(argv[1]);
+          printf(" ************ current directory: %s ---------- next dir: %s\n", argv[0], argv[1]);
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
@@ -189,8 +190,6 @@ int main()
 
   while(1) {
     job_t *j = NULL;
-    int get_pid = getpid();
-    //printf("PID %d\n", get_pid);
     if(!(j = readcmdline(promptmsg()))){
       if (feof(stdin)) { /* End of file (ctrl-d) */
      fflush(stdout);
@@ -207,12 +206,18 @@ int main()
     /* Your code goes here */
     /* You need to loop through jobs list since a command line can contain ;*/
     /* Check for built-in commands */
+      process_t* temp = j->first_process;
+      int argc_temp = temp->argc;
+      char** argv_temp = temp->argv;
+
+      builtin_cmd(j, argc_temp, argv_temp);
     /* If not built-in */
         /* If job j runs in foreground */
         /* spawn_job(j,true) */
         /* else */
         /* spawn_job(j,false) */
       spawn_job(j, false);
+
   }
 }
 
@@ -241,3 +246,15 @@ void compile_string(process_t* p){
   strcat(example, " -o devil");       
   execvp(example, NULL);
 }
+
+
+
+
+
+
+
+
+
+
+
+
