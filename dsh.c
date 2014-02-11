@@ -147,6 +147,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
+		jobs(jobptr);
             /* Your code here */
             //jobs(argv[0]);
     return true;
@@ -222,14 +223,18 @@ int main()
 
 
 void jobs(job_t* myJob){
-
-  while(myJob->next != NULL){
-    printf("%s \n", myJob->commandinfo);
-    int stat = (myJob->first_process)->status;
-    printf("%d \n", stat);
-    myJob = myJob->next;
+  if (myJob != NULL) {
+		  while(myJob != NULL) {
+			printf("%s \n", myJob->commandinfo);
+			printf("THIS IS HERE");
+			int stat = (myJob->first_process)->status;
+			printf("%d \n", stat);
+			myJob = myJob->next;
+		  }
   }
-
+  else {
+	printf("No current jobs\n");
+  } 
   /* if(p->completed){
     delete_job(j, jobptr);
     job_t* myjob = readcmdline(promptmsg());
