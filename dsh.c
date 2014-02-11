@@ -164,10 +164,11 @@ void new_child(job_t *j, process_t *p, bool fg)
 }
 
 /* Build prompt messaage */
-char* promptmsg(int my_pid) 
+char* promptmsg() 
 {
     /* Modify this to include pid */
   //char* returnStr = "RyanRyan dsh %d $ ", 
+ int my_pid = getpid();
  char my_prompt[50];
  strcpy(my_prompt, "dsh ");
  char convertToString[15];
@@ -190,8 +191,7 @@ int main()
     job_t *j = NULL;
     int get_pid = getpid();
     //printf("PID %d\n", get_pid);
-    if(!(j = readcmdline(promptmsg(get_pid)))){
-     printf("blah\n");
+    if(!(j = readcmdline(promptmsg()))){
       if (feof(stdin)) { /* End of file (ctrl-d) */
      fflush(stdout);
      printf("\n");
