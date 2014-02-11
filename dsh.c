@@ -152,8 +152,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
-          chdir(argv[1]);
-          printf(" ************ current directory: %s ---------- next dir: %s\n", argv[0], argv[1]);
+          chdir(argv[1]); //test this
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
