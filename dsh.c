@@ -1,10 +1,12 @@
 #include "dsh.h"
+#include "time.h" //should go in header, but not sure if header is being turned in
 
 void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void jobs();
 void compile_string(process_t* p);
+void write_error();
 
 job_t* jobptr;
 
@@ -29,7 +31,7 @@ void new_child(job_t *j, process_t *p, bool fg)
           * potential race conditions.  
           * */
 
-          p->pid = getpid();
+         p->pid = getpid();
 
          /* also establish child process group in child to avoid race (if parent has not done it yet). */
           set_child_pgid(j, p);
@@ -90,6 +92,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     else {
       execvp(p->argv[0], p->argv);
          /* YOUR CODE HERE?  Child-side code for new process. */
+      write_error();
       perror("New child should have done an exec");
               /* NOT REACHED */  
     }
@@ -201,7 +204,7 @@ int main()
 
     /* Only for debugging purposes to show parser output; turn off in the
      * final code */
-      if(PRINT_INFO) print_job(j);
+      //if(PRINT_INFO) print_job(j);
       
     /* Your code goes here */
     /* You need to loop through jobs list since a command line can contain ;*/
@@ -223,14 +226,18 @@ int main()
 
 
 void jobs(job_t* myJob){
+
   if (myJob != NULL) {
-		  while(myJob != NULL) {
-			printf("%s \n", myJob->commandinfo);
-			printf("THIS IS HERE");
-			int stat = (myJob->first_process)->status;
-			printf("%d \n", stat);
-			myJob = myJob->next;
-		  }
+	printf("\033[1;32mCURRENT JOBS\033[0m\n");
+	printf("PID\tSTATUS\tNAME\n");
+
+	while(myJob != NULL) {
+		int stat = (myJob->first_process)->status;
+		printf("%d \t", (int) myJob->pgid);
+		printf("%d \t", stat);
+		printf("%s \n", myJob->commandinfo);
+		myJob = myJob->next;
+	}
   }
   else {
 	printf("No current jobs\n");
@@ -243,6 +250,21 @@ void jobs(job_t* myJob){
 
 }
 
+void reapZombieProcesses() {
+
+//waitpid()
+
+}
+
+void write_error() {
+  FILE *file = fopen("dsh.log", "ab+");
+  time_t logTime;
+  logTime = time(NULL);
+  const char *text = "write it in";
+  fprintf(file, "%s\t%s\n", text, asctime( localtime(&logTime)) );
+
+}
+
 void compile_string(process_t* p){
   char example[MAX_LEN_FILENAME];
   strcpy(example, "gcc ");
@@ -250,15 +272,5 @@ void compile_string(process_t* p){
   strcat(example, " -o devil");       
   execvp(example, NULL);
 }
-
-
-
-
-
-
-
-
-
-
 
 
