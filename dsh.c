@@ -298,7 +298,7 @@ int in_handler(char* ifile, char** argv) {
 
 int out_handler(char* ofile, char** argv) {
      //execvp(argv[0], argv);
-     //FILE * file = fopen(ifile, "ab+");
+     FILE * newFile = fopen(ofile, "ab+");
      //fprintf(file, "%s", result);
      int file = open(ofile, O_APPEND | O_WRONLY);
      
