@@ -98,8 +98,28 @@ void new_child(job_t *j, process_t *p, bool fg)
       io_handler(p->ifile, p->argv, 0);
     }
     else {
+      struct stat s;
+      char path[100];
+      strcat(path, "/usr/bin/");
+      strcat(path, p->argv[0]);
+      if( stat(path,&s) == 0 ) {
+        execvp(path, p->argv);
+      }
+      else {
+        execvp(p->argv[0], p->argv);
+        char commandName[500];
+        strcpy(commandName, p->argv[0]);
+        strcat(commandName, " is an invalid command, new child should have done an exec");
+                                    
+        write_error(commandName);
+        perror(commandName);
+        //error
+      }
+
+      
+      /*
       execvp(p->argv[0], p->argv);
-         /* YOUR CODE HERE?  Child-side code for new process. */
+         // YOUR CODE HERE?  Child-side code for new process.
 
       //error handling
       char commandName[500];
@@ -108,7 +128,8 @@ void new_child(job_t *j, process_t *p, bool fg)
       
       write_error(commandName);
       perror(commandName);
-              /* NOT REACHED */  
+              // NOT REACHED  
+      */
     }
 
     exit(EXIT_FAILURE);
