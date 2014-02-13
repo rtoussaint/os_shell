@@ -7,6 +7,8 @@ void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void jobs();
 void compile_string(process_t* p);
 void write_error();
+int in_handler(char* ifile, char** argv);
+int out_handler(char* ofile, char** argv);
 
 job_t* jobptr;
 
@@ -88,6 +90,18 @@ void new_child(job_t *j, process_t *p, bool fg)
     if(endswith(p->argv[0],".c")) {
       compile_string(p);
 
+    }
+    else if (p->ofile != NULL) {
+      printf("young and rich\n");
+      //printf("outfile is: %s", p->ofile);
+      out_handler(p->ofile, p->argv);
+      //stands for > so it writes to a file
+    }
+    else if(p->ifile != NULL) {
+      printf("YOLO\n");
+      printf("input is: %s", p->ifile);
+      in_handler(p->ifile, p->argv);
+      //stands for < so it reads from a file
     }
     else {
       execvp(p->argv[0], p->argv);
@@ -201,10 +215,10 @@ char* promptmsg()
 
 int main() 
 {
-
   init_dsh();
   DEBUG("Successfully initialized\n");
-
+  remove("dsh.log");
+  //remove_log();
   while(1) {
     job_t *j = NULL;
     if(!(j = readcmdline(promptmsg()))){
@@ -270,12 +284,31 @@ void reapZombieProcesses() {
 
 }
 
-void write_error(char* errorMsg) {
+void write_error(char* errorMsg, char** argv) {
   FILE *file = fopen("dsh.log", "ab+");
   time_t logTime;
   logTime = time(NULL);
   fprintf(file, "%s\t\t%s\n", errorMsg, asctime( localtime(&logTime)) );
 
+}
+
+int in_handler(char* ifile, char** argv) {
+  return 0;
+}
+
+int out_handler(char* ofile, char** argv) {
+     //execvp(argv[0], argv);
+     //FILE * file = fopen(ifile, "ab+");
+     //fprintf(file, "%s", result);
+     int file = open(ofile, O_APPEND | O_WRONLY);
+     
+     printf("\nfile desc #: %d\n", file);  
+     
+     if(dup2(file,1) < 0)
+       return 1;
+ 
+     printf( "I'd be kinda cool if this worked" );
+  return 0;
 }
 
 void compile_string(process_t* p){
