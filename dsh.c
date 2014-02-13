@@ -92,8 +92,14 @@ void new_child(job_t *j, process_t *p, bool fg)
     else {
       execvp(p->argv[0], p->argv);
          /* YOUR CODE HERE?  Child-side code for new process. */
-      write_error();
-      perror("New child should have done an exec");
+
+      //error handling
+      char commandName[500];
+      strcpy(commandName, p->argv[0]);
+      strcat(commandName, " is an invalid command, new child should have done an exec");
+      
+      write_error(commandName);
+      perror(commandName);
               /* NOT REACHED */  
     }
 
@@ -147,6 +153,14 @@ void new_child(job_t *j, process_t *p, bool fg)
   if (!strcmp(argv[0], "quit")) {
             /* Your code here */
           //free jobs here
+
+    //Make a breakpoint in the log file.
+    FILE *file = fopen("dsh.log", "ab+");
+    time_t logTime;
+    logTime = time(NULL);
+    const char *text = "\n****End of Session ****";
+    fprintf(file, "%s\t\t%s\n\n", text, asctime( localtime(&logTime)) );
+
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
@@ -256,12 +270,11 @@ void reapZombieProcesses() {
 
 }
 
-void write_error() {
+void write_error(char* errorMsg) {
   FILE *file = fopen("dsh.log", "ab+");
   time_t logTime;
   logTime = time(NULL);
-  const char *text = "write it in";
-  fprintf(file, "%s\t%s\n", text, asctime( localtime(&logTime)) );
+  fprintf(file, "%s\t\t%s\n", errorMsg, asctime( localtime(&logTime)) );
 
 }
 
