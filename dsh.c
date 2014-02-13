@@ -97,6 +97,9 @@ void new_child(job_t *j, process_t *p, bool fg)
     else if(p->ifile != NULL) {
       io_handler(p->ifile, p->argv, 0);
     }
+    else if (p->next != NULL) {
+      printf("pipe here");
+    }
     else {
       struct stat s;
       char path[100];
