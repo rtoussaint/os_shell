@@ -7,8 +7,7 @@ void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void jobs();
 void compile_string(process_t* p);
 void write_error();
-int in_handler(char* ifile, char** argv);
-int out_handler(char* ofile, char** argv);
+int io_handler(char* file, char** argv, int inOutBit);
 
 job_t* jobptr;
 
@@ -93,15 +92,10 @@ void new_child(job_t *j, process_t *p, bool fg)
     }
     else if (p->ofile != NULL) {
       printf("young and rich\n");
-      //printf("outfile is: %s", p->ofile);
-      out_handler(p->ofile, p->argv);
-      //stands for > so it writes to a file
+      io_handler(p->ofile, p->argv, 1);
     }
     else if(p->ifile != NULL) {
-      printf("YOLO\n");
-      printf("input is: %s", p->ifile);
-      in_handler(p->ifile, p->argv);
-      //stands for < so it reads from a file
+      io_handler(p->ifile, p->argv, 0);
     }
     else {
       execvp(p->argv[0], p->argv);
@@ -292,22 +286,29 @@ void write_error(char* errorMsg, char** argv) {
 
 }
 
-int in_handler(char* ifile, char** argv) {
-  return 0;
-}
-
-int out_handler(char* ofile, char** argv) {
-     //execvp(argv[0], argv);
-     FILE * newFile = fopen(ofile, "ab+");
-     //fprintf(file, "%s", result);
-     int file = open(ofile, O_APPEND | O_WRONLY);
-     
-     printf("\nfile desc #: %d\n", file);  
-     
-     if(dup2(file,1) < 0)
-       return 1;
- 
-     printf( "I'd be kinda cool if this worked" );
+/*
+ * Sends output of process to file or input of file to process
+ * int inOutBit - 1 is for output files, 0 is for input files
+ */
+int io_handler(char* file, char** argv, int inOutBit) {
+  
+  int fileDes;
+  //if its input <
+  if (inOutBit == 0) {
+    fileDes = open(file, O_RDONLY);
+    dup2(fileDes, 0);
+  }
+  //if it output >
+  else if (inOutBit == 1) {
+   fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
+   dup2(fileDes, 1);
+  }
+  else {
+    //error case
+    return 1;
+  }                  
+  execvp(argv[0], argv);
+  close(fileDes);
   return 0;
 }
 
