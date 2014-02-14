@@ -206,9 +206,24 @@ void new_child(job_t *j, process_t *p, bool fg)
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
+	  //same thing as fg
+	  //loop through and find job and send continue job signal
+	  //then go to next job but don't need to wait -- shell will continue 
+	  while(jobptr != NULL) {
+		  if (jobptr->pgid == argv[1]) {
+			  continue_job(jobptr);
+		  }
+		  else {
+			  jobptr = jobptr->next;
+		  }	  
+	  }
   }
   else if (!strcmp("fg", argv[0])) {
             /* Your code here */
+	  //need to first find the job
+	  //traverse job list and find the job
+	  //pass this job to continue job
+	  //shell should wait for process to finish before prompting again
 	  job_t* current = jobptr;
 	  while(current != NULL) {
 		  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
@@ -217,20 +232,21 @@ void new_child(job_t *j, process_t *p, bool fg)
 			  //make argv[1] negative so that any process from the job will finish
 			  //for loop for every process in the job
 			  
-			  process_t* current_process = current->first_process;
+			  process_t* current_process = current->process;
 			  while (current_process != NULL) {
-				  waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
+				  waitpid((atoi(argv[1])*(-1)), process->status, WUNTRACED)
 				  current_process = current_process->next;
 			  }
-			  
+			
 		  }
 		  else {
 			  current = current->next;
 		  }	
-		  
-	  }
-	  seize_tty(getpid());
-	  
+					  		  
+		  }
+	  //get pid returns pid of calling process
+		  //do this after wait
+	  seize_tty(getpid())
   }
         return false;       /* not a builtin command */
 }
