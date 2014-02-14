@@ -10,6 +10,7 @@ void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
 
 job_t* jobptr;
+bool isBuiltIn;
 
 /* Sets the process group id for a given job and process */
 int set_child_pgid(job_t *j, process_t *p)
@@ -181,7 +182,6 @@ void new_child(job_t *j, process_t *p, bool fg)
 
       /* check whether the cmd is a built in command
         */
-
   if (!strcmp(argv[0], "quit")) {
             /* Your code here */
           //free jobs here
@@ -192,7 +192,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     logTime = time(NULL);
     const char *text = "\n****End of Session ****";
     fprintf(file, "%s\t\t%s\n\n", text, asctime( localtime(&logTime)) );
-
+    isBuiltIn = true;
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
@@ -202,7 +202,10 @@ void new_child(job_t *j, process_t *p, bool fg)
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
-          chdir(argv[1]); //test this
+        if(argc == 2) {
+           chdir(argv[1]); 
+           isBuiltIn = true;
+        }
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
@@ -265,8 +268,11 @@ int main()
         /* spawn_job(j,true) */
         /* else */
         /* spawn_job(j,false) */
-      spawn_job(j, false);
+      if(!isBuiltIn) {
+        spawn_job(j, false);
+      }
 
+        isBuiltIn = false;
   }
 }
 
