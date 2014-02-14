@@ -4,10 +4,11 @@
 void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
-void jobs();
+void jobs(job_t* j);
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
+char* check_job_status(job_t* job);
 
 job_t* jobptr;
 
@@ -219,6 +220,7 @@ char* promptmsg()
     /* Modify this to include pid */
   //char* returnStr = "RyanRyan dsh %d $ ", 
  int my_pid = getpid();
+ //char* my_prompt = (char*) malloc(50);
  char my_prompt[50];
  strcpy(my_prompt, "dsh ");
  char convertToString[15];
@@ -271,6 +273,49 @@ int main()
 }
 
 
+void remove_completed(job_t* j) {
+  job_t* current_job = j;
+  while (current_job != NULL) {
+    
+    current_job = current_job->next;
+  }
+}
+
+char* check_job_status(job_t* job) {
+  process_t* current_process = job->first_process;
+  while(current_process != NULL) {
+    int status = current_process->status;
+    if (status < 0) {
+      if (waitpid(current_process->pid, &(status), WNOHANG) == 0) {
+        return "Running";
+      }
+      else if (waitpid(current_process->pid, &(status), WNOHANG) == -1){
+        return "Failed";
+      }
+    }
+    else if (WIFEXITED(status)) {
+      return "Terminated normally";
+    }
+    else if (WIFSIGNALED(status)) {
+      int terminationSignal = WTERMSIG(status);
+      char first[100];
+      //char* first = (char*)malloc(100);
+      strcat(first,"Terminated by signal");
+      char str[15];
+      sprintf(str, "%d", terminationSignal);
+      strcat(first, str);
+      return first;
+    }
+    else if (WIFSTOPPED(status)) {
+      return "Stopped";
+    }
+    current_process = current_process->next;
+
+  }
+  return NULL;
+
+}
+
 void jobs(job_t* myJob){
 
   if (myJob != NULL) {
@@ -280,7 +325,7 @@ void jobs(job_t* myJob){
 	while(myJob != NULL) {
 		int stat = (myJob->first_process)->status;
 		printf("%d \t", (int) myJob->pgid);
-		printf("%d \t", stat);
+		printf("%s \t", check_job_status(myJob));
 		printf("%s \n", myJob->commandinfo);
 		myJob = myJob->next;
 	}
