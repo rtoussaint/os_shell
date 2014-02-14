@@ -228,7 +228,7 @@ char* promptmsg()
  strcat(my_prompt, convertToString);
  strcat(my_prompt, " $");
   return my_prompt;
-  //return "dsh $ ";
+
 }
 
 int main() 
