@@ -160,6 +160,9 @@ void new_child(job_t *j, process_t *p, bool fg)
   else if (!strcmp("fg", argv[0])) {
             /* Your code here */
   }
+  else if(!strcmp(">", argv[0])){
+      last_job->mystdout = argv[1];
+  }
         return false;       /* not a builtin command */
 }
 
