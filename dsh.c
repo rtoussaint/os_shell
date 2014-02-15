@@ -111,6 +111,8 @@ void new_child(job_t *j, process_t *p, bool fg)
       }
       else {
         execvp(p->argv[0], p->argv);
+        
+        //otherwise statement must be added 
         char commandName[500];
         strcpy(commandName, p->argv[0]);
         strcat(commandName, " is an invalid command, new child should have done an exec");
@@ -284,16 +286,15 @@ void remove_completed(job_t* j) {
 char* check_job_status(job_t* job) {
   process_t* current_process = job->first_process;
   while(current_process != NULL) {
-    int status = current_process->status;
+    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
     if (status < 0) {
-      if (waitpid(current_process->pid, &(status), WNOHANG) == 0) {
-        return "Running";
-      }
-      else if (waitpid(current_process->pid, &(status), WNOHANG) == -1){
-        return "Failed";
-      }
+      return "Failed";
+    }
+    else if (status == 0) {
+      return "Completed";
     }
     else if (WIFEXITED(status)) {
+      current_process->completed = true;
       return "Terminated normally";
     }
     else if (WIFSIGNALED(status)) {
@@ -307,6 +308,7 @@ char* check_job_status(job_t* job) {
       return first;
     }
     else if (WIFSTOPPED(status)) {
+      current_process->completed = false;
       return "Stopped";
     }
     current_process = current_process->next;
