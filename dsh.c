@@ -8,7 +8,7 @@ void jobs();
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
-void pipelining(char** argv);
+void pipelining(char** argv, int argc);
 
 job_t* jobptr;
 bool isBuiltIn;
@@ -101,7 +101,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     }
     else if (p->next != NULL) {
       printf("pipe here");
-      pipelining(p->argv);
+      pipelining(p->argv, p->argc);
     }
     else {
       struct stat s;
@@ -355,12 +355,15 @@ void compile_string(process_t* p){
 
 
 
-void pipelining(char** argv){
+void pipelining(char** argv, int argc){
   printf("got into pipeling\n");
   int fd[2];
   pid_t pid;
   pipe(fd);
-
+  if(argc != 2) {
+      error("wrong number of arguments");
+      exit(EXIT_FAILURE);
+  }
   switch (pid = fork()){
     printf("got into fork\n");
     case -1:
@@ -369,12 +372,16 @@ void pipelining(char** argv){
 
     case 0: /* child process  */
       printf("got into child\n");
-      dup2(fd[0], 0);
-      execvp(argv[0], argv);
+      close(fd[1]);
+      dup2(fd[0], STDIN_FILENO);
+      close(fd[0]);
+      execve(argv[0], argv, NULL); //Need to figure out this line
     default:
-    printf("got into default\n");
       wait(NULL);
-      dup2(fd[1], 1);
+      printf("got into default\n");
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);
   }
 }
 
