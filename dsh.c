@@ -8,6 +8,7 @@ void jobs();
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
+void pipelining(char** argv);
 
 job_t* jobptr;
 bool isBuiltIn;
@@ -100,6 +101,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     }
     else if (p->next != NULL) {
       printf("pipe here");
+      pipelining(p->argv);
     }
     else {
       struct stat s;
@@ -326,12 +328,12 @@ int io_handler(char* file, char** argv, int inOutBit) {
   //if its input <
   if (inOutBit == 0) {
     fileDes = open(file, O_RDONLY);
-    dup2(fileDes, 0);
+    dup2(fileDes, 0); //pointing 0 at fileDes
   }
   //if it output >
   else if (inOutBit == 1) {
    fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
-   dup2(fileDes, 1);
+   dup2(fileDes, 1); //redirecting the standout to fileDes
   }
   else {
     //error case
@@ -350,4 +352,29 @@ void compile_string(process_t* p){
   execvp(example, NULL);
 }
 
+
+
+
+void pipelining(char** argv){
+  printf("got into pipeling\n");
+  int fd[2];
+  pid_t pid;
+  pipe(fd);
+
+  switch (pid = fork()){
+    printf("got into fork\n");
+    case -1:
+      error("pipe");
+      exit(EXIT_FAILURE);
+
+    case 0: /* child process  */
+      printf("got into child\n");
+      dup2(fd[0], 0);
+      execvp(argv[0], argv);
+    default:
+    printf("got into default\n");
+      wait(NULL);
+      dup2(fd[1], 1);
+  }
+}
 
