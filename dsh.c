@@ -93,14 +93,13 @@ void new_child(job_t *j, process_t *p, bool fg)
 
     }
     else if (p->ofile != NULL) {
-      printf("young and rich\n");
       io_handler(p->ofile, p->argv, 1);
     }
     else if(p->ifile != NULL) {
       io_handler(p->ifile, p->argv, 0);
     }
     else if (p->next != NULL) {
-      printf("pipe here");
+      printf("pipe here\n");
       pipelining(p->argv, p->argc);
     }
     else {
@@ -231,7 +230,7 @@ char* promptmsg()
  sprintf(convertToString, "%d", my_pid);
 
  strcat(my_prompt, convertToString);
- strcat(my_prompt, " $");
+ strcat(my_prompt, " $ ");
   return my_prompt;
 
 }
@@ -328,12 +327,12 @@ int io_handler(char* file, char** argv, int inOutBit) {
   //if its input <
   if (inOutBit == 0) {
     fileDes = open(file, O_RDONLY);
-    dup2(fileDes, 0); //pointing 0 at fileDes
+    dup2(fileDes, STDIN_FILENO); //pointing 0 at fileDes
   }
   //if it output >
   else if (inOutBit == 1) {
    fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
-   dup2(fileDes, 1); //redirecting the standout to fileDes
+   dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
   }
   else {
     //error case
@@ -375,7 +374,7 @@ void pipelining(char** argv, int argc){
       close(fd[1]);
       dup2(fd[0], STDIN_FILENO);
       close(fd[0]);
-      execve(argv[0], argv, NULL); //Need to figure out this line
+      execvp(argv[0], argv); //Need to figure out this line
     default:
       wait(NULL);
       printf("got into default\n");
