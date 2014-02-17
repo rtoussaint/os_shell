@@ -8,11 +8,8 @@ void jobs(job_t* j);
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
-<<<<<<< HEAD
 char* check_job_status(job_t* job);
-=======
 void pipelining(char** argv, int argc);
->>>>>>> 74e1218fe50d1ae1a195436b9d7634373875014b
 
 job_t* jobptr;
 bool isBuiltIn;
@@ -296,10 +293,10 @@ void remove_completed(job_t* j) {
 char* check_job_status(job_t* job) {
   process_t* current_process = job->first_process;
   while(current_process != NULL) {
-    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG | WCONTINUED);
+    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
     
     if (status == -1) {
-      return "Failed";
+      return "Completed";
     }
     //else if (status == 0) {
     //  return "Completed";
