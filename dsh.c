@@ -140,6 +140,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     default: /* parent */
             /* establish child process group */
     wait(NULL);
+	//need to use wait pid instead of wait -- wuntraced returns if the child has stopped
     p->pid = pid;
     set_child_pgid(j, p); 
     if(endswith(p->argv[0],".c")) {
@@ -209,9 +210,11 @@ void new_child(job_t *j, process_t *p, bool fg)
   }
   else if (!strcmp("fg", argv[0])) {
             /* Your code here */
+	  //fg with no argument should start the last stopped job
 	  job_t* current = jobptr;
+	  printf("jobptr: %p", jobptr);
 	  while(current != NULL) {
-		  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
+		  printf("current: %p",current);
 		  if (current->pgid == atoi(argv[1])) {
 			  continue_job(current);
 			  //make argv[1] negative so that any process from the job will finish
@@ -222,6 +225,7 @@ void new_child(job_t *j, process_t *p, bool fg)
 				  waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
 				  current_process = current_process->next;
 			  }
+			  break;
 			  
 		  }
 		  else {
