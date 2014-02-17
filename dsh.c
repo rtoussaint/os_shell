@@ -8,9 +8,14 @@ void jobs(job_t* j);
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
+<<<<<<< HEAD
 char* check_job_status(job_t* job);
+=======
+void pipelining(char** argv, int argc);
+>>>>>>> 74e1218fe50d1ae1a195436b9d7634373875014b
 
 job_t* jobptr;
+bool isBuiltIn;
 
 /* Sets the process group id for a given job and process */
 int set_child_pgid(job_t *j, process_t *p)
@@ -92,14 +97,14 @@ void new_child(job_t *j, process_t *p, bool fg)
 
     }
     else if (p->ofile != NULL) {
-      printf("young and rich\n");
       io_handler(p->ofile, p->argv, 1);
     }
     else if(p->ifile != NULL) {
       io_handler(p->ifile, p->argv, 0);
     }
     else if (p->next != NULL) {
-      printf("pipe here");
+      printf("pipe here\n");
+      pipelining(p->argv, p->argc);
     }
     else {
       struct stat s;
@@ -184,7 +189,6 @@ void new_child(job_t *j, process_t *p, bool fg)
 
       /* check whether the cmd is a built in command
         */
-
   if (!strcmp(argv[0], "quit")) {
             /* Your code here */
           //free jobs here
@@ -195,7 +199,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     logTime = time(NULL);
     const char *text = "\n****End of Session ****";
     fprintf(file, "%s\t\t%s\n\n", text, asctime( localtime(&logTime)) );
-
+    isBuiltIn = true;
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
@@ -205,7 +209,10 @@ void new_child(job_t *j, process_t *p, bool fg)
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
-          chdir(argv[1]); //test this
+        if(argc == 2) {
+           chdir(argv[1]); 
+           isBuiltIn = true;
+        }
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
@@ -230,9 +237,9 @@ char* promptmsg()
  sprintf(convertToString, "%d", my_pid);
 
  strcat(my_prompt, convertToString);
- strcat(my_prompt, " $");
+ strcat(my_prompt, " $ ");
   return my_prompt;
-  //return "dsh $ ";
+
 }
 
 int main() 
@@ -269,8 +276,11 @@ int main()
         /* spawn_job(j,true) */
         /* else */
         /* spawn_job(j,false) */
-      spawn_job(j, false);
+      if(!isBuiltIn) {
+        spawn_job(j, false);
+      }
 
+        isBuiltIn = false;
   }
 }
 
@@ -286,14 +296,16 @@ void remove_completed(job_t* j) {
 char* check_job_status(job_t* job) {
   process_t* current_process = job->first_process;
   while(current_process != NULL) {
-    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
-    if (status < 0) {
+    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG | WCONTINUED);
+    
+    if (status == -1) {
       return "Failed";
     }
-    else if (status == 0) {
-      return "Completed";
-    }
-    else if (WIFEXITED(status)) {
+    //else if (status == 0) {
+    //  return "Completed";
+    //}
+
+    if (WIFEXITED(status)) {
       current_process->completed = true;
       return "Terminated normally";
     }
@@ -367,12 +379,12 @@ int io_handler(char* file, char** argv, int inOutBit) {
   //if its input <
   if (inOutBit == 0) {
     fileDes = open(file, O_RDONLY);
-    dup2(fileDes, 0);
+    dup2(fileDes, STDIN_FILENO); //pointing 0 at fileDes
   }
   //if it output >
   else if (inOutBit == 1) {
    fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
-   dup2(fileDes, 1);
+   dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
   }
   else {
     //error case
@@ -391,4 +403,36 @@ void compile_string(process_t* p){
   execvp(example, NULL);
 }
 
+
+
+
+void pipelining(char** argv, int argc){
+  printf("got into pipeling\n");
+  int fd[2];
+  pid_t pid;
+  pipe(fd);
+  if(argc != 2) {
+      error("wrong number of arguments");
+      exit(EXIT_FAILURE);
+  }
+  switch (pid = fork()){
+    printf("got into fork\n");
+    case -1:
+      error("pipe");
+      exit(EXIT_FAILURE);
+
+    case 0: /* child process  */
+      printf("got into child\n");
+      close(fd[1]);
+      dup2(fd[0], STDIN_FILENO);
+      close(fd[0]);
+      execvp(argv[0], argv); //Need to figure out this line
+    default:
+      wait(NULL);
+      printf("got into default\n");
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);
+  }
+}
 
