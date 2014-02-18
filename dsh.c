@@ -129,6 +129,7 @@ void spawn_job(job_t *j, bool fg){
             input = pipe[0];
     }
 }
+}
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
@@ -343,7 +344,6 @@ int main() {
         close(fileDes);
         return 0;
     }
-}
 
 
 
