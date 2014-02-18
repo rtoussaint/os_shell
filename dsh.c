@@ -359,7 +359,7 @@ void pipelining(char** argv){
   printf("got into pipeling\n");
   int fd[2];
   pid_t pid;
-  pipe(fd);
+  pipe(fd); 
 
   switch (pid = fork()){
     printf("got into fork\n");
@@ -369,12 +369,12 @@ void pipelining(char** argv){
 
     case 0: /* child process  */
       printf("got into child\n");
-      dup2(fd[0], 0);
-      execvp(argv[0], argv);
+      dup2(fd[0], STDIN_FILENO); 
+      execvp(argv[0], argv); 
     default:
     printf("got into default\n");
       wait(NULL);
-      dup2(fd[1], 1);
+      dup2(fd[1], STOUT_FILENO); 
   }
 }
 
