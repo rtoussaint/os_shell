@@ -359,10 +359,19 @@ void pipelining(char** argv, int argc){
   int fd[2];
   pid_t pid;
   pipe(fd);
+
+  if(pipe(fd[2])){
+    perror("error here");
+    exit(EXIT_FAILURE);
+  }
+
+
   if(argc != 2) {
       error("wrong number of arguments");
       exit(EXIT_FAILURE);
   }
+
+
   switch (pid = fork()){
     printf("got into fork\n");
     case -1:
@@ -371,16 +380,22 @@ void pipelining(char** argv, int argc){
 
     case 0: /* child process  */
       printf("got into child\n");
-      close(fd[1]);
-      dup2(fd[0], STDIN_FILENO);
-      close(fd[0]);
-      execvp(argv[0], argv); //Need to figure out this line
+      close(fd[0]); //close the input
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);   //close the output
+      execvp(argv[0], argv); //Need to figure out this line ********
     default:
       wait(NULL);
       printf("got into default\n");
-      close(fd[0]);
-      dup2(fd[1], STDOUT_FILENO);
       close(fd[1]);
+      dup2(fd[0], STDIN_FILENO);
+      close(fd[0]);
+      execvp(argv[1], ); //need to finish
   }
 }
+
+
+
+
+
 
