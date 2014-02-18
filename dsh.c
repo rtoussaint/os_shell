@@ -60,7 +60,6 @@ void new_child(job_t *j, process_t *p, bool fg)
 
  void spawn_job(job_t *j, bool fg) 
  {
-
   pid_t pid; //
   process_t *p;
 
@@ -144,7 +143,9 @@ void new_child(job_t *j, process_t *p, bool fg)
     break;
     default: /* parent */
             /* establish child process group */
-    wait(NULL);
+    //wait(NULL);
+    //waitpid(current_process->pid, &(current_process->status), WNOHANG);
+    waitpid(pid, NULL, WUNTRACED);
     p->pid = pid;
 
     set_child_pgid(j, p); 
@@ -156,7 +157,9 @@ void new_child(job_t *j, process_t *p, bool fg)
         case 0:
             execvp("./devil", p->argv);
         default:
-          wait(NULL);
+        //wait(NULL);
+        waitpid(pid, NULL, WUNTRACED);
+        //waitpid(current_process->pid, &(current_process->status), WNOHANG);
       }
 
     }
@@ -275,7 +278,7 @@ int main()
         /* else */
         /* spawn_job(j,false) */
       if(!isBuiltIn) {
-        spawn_job(j, false);
+        spawn_job(j, true);
       }
 
         isBuiltIn = false;
