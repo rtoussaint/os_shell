@@ -4,23 +4,19 @@
 void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
-void jobs(job_t* j);
+void jobs();
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
-char* check_job_status(job_t* job);
-void pipelining(char** argv, int argc);
-void reapZombies();
 
 job_t* jobptr;
-bool isBuiltIn;
 
 /* Sets the process group id for a given job and process */
 int set_child_pgid(job_t *j, process_t *p)
 {
     if (j->pgid < 0) /* first child: use its pid for job pgid */
-      j->pgid = p->pid;
-    return(setpgid(p->pid,j->pgid));
+  j->pgid = p->pid;
+  return(setpgid(p->pid,j->pgid));
 }
 
 /* Creates the context for a new child by setting the pid, pgid and tcsetpgrp */
@@ -42,7 +38,7 @@ void new_child(job_t *j, process_t *p, bool fg)
           set_child_pgid(j, p);
 
          if(fg) // if fg is set
-          seize_tty(j->pgid); // assign the terminal
+    seize_tty(j->pgid); // assign the terminal
 
          /* Set the handling for job control signals back to the default. */
  signal(SIGTTOU, SIG_DFL);
@@ -60,6 +56,7 @@ void new_child(job_t *j, process_t *p, bool fg)
 
  void spawn_job(job_t *j, bool fg) 
  {
+
   pid_t pid; //
   process_t *p;
 
@@ -74,34 +71,34 @@ void new_child(job_t *j, process_t *p, bool fg)
 
 
   for(p = j->first_process; p; p = p->next) {
-    
-   /* YOUR CODE HERE? */
-   /* Builtin commands are already taken care earlier */
-    
+
+    /* YOUR CODE HERE? */
+    /* Builtin commands are already taken care earlier */
+
    switch (pid = fork()) {
 
-    case -1: /* fork failure */
+          case -1: /* fork failure */
     perror("fork");
     exit(EXIT_FAILURE);
 
-    case 0: /* child process  */
+          case 0: /* child process  */
     p->pid = getpid();      
     new_child(j, p, fg);
 
-    //Need to compile C Program
+            //Need to compile C Program
     if(endswith(p->argv[0],".c")) {
       compile_string(p);
 
     }
     else if (p->ofile != NULL) {
+      printf("young and rich\n");
       io_handler(p->ofile, p->argv, 1);
     }
     else if(p->ifile != NULL) {
       io_handler(p->ifile, p->argv, 0);
     }
     else if (p->next != NULL) {
-      printf("pipe here\n");
-      pipelining(p->argv, p->argc);
+      printf("pipe here");
     }
     else {
       struct stat s;
@@ -113,14 +110,13 @@ void new_child(job_t *j, process_t *p, bool fg)
       }
       else {
         execvp(p->argv[0], p->argv);
-        //otherwise statement must be added 
         char commandName[500];
         strcpy(commandName, p->argv[0]);
         strcat(commandName, " is an invalid command, new child should have done an exec");
                                     
         write_error(commandName);
-        perror(commandName);  
-        
+        perror(commandName);
+        //error
       }
 
       
@@ -143,11 +139,8 @@ void new_child(job_t *j, process_t *p, bool fg)
     break;
     default: /* parent */
             /* establish child process group */
-    //wait(NULL);
-    //waitpid(current_process->pid, &(current_process->status), WNOHANG);
-    waitpid(pid, NULL, WUNTRACED);
+    wait(NULL);
     p->pid = pid;
-
     set_child_pgid(j, p); 
     if(endswith(p->argv[0],".c")) {
       pid_t test;
@@ -157,9 +150,7 @@ void new_child(job_t *j, process_t *p, bool fg)
         case 0:
             execvp("./devil", p->argv);
         default:
-        //wait(NULL);
-        waitpid(pid, NULL, WUNTRACED);
-        //waitpid(current_process->pid, &(current_process->status), WNOHANG);
+          wait(NULL);
       }
 
     }
@@ -188,7 +179,8 @@ void new_child(job_t *j, process_t *p, bool fg)
  bool builtin_cmd(job_t *last_job, int argc, char **argv) 
  {
 
-  /* check whether the cmd is a built in command*/
+      /* check whether the cmd is a built in command
+        */
 
   if (!strcmp(argv[0], "quit")) {
             /* Your code here */
@@ -200,27 +192,38 @@ void new_child(job_t *j, process_t *p, bool fg)
     logTime = time(NULL);
     const char *text = "\n****End of Session ****";
     fprintf(file, "%s\t\t%s\n\n", text, asctime( localtime(&logTime)) );
-    isBuiltIn = true;
+
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
-    reapZombies();
-    jobs(jobptr);
-    //reapZombies();
-    isBuiltIn = true;
+		jobs(jobptr);
+            /* Your code here */
+            //jobs(argv[0]);
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
-        if(argc == 2) {
-           chdir(argv[1]); 
-           isBuiltIn = true;
-        }
+          chdir(argv[1]); //test this
   }
   else if (!strcmp("bg", argv[0])) {
             /* Your code here */
+	  //same thing as fg
+	  //loop through and find job and send continue job signal
+	  //then go to next job but don't need to wait -- shell will continue 
+	  while(jobptr != NULL) {
+		  if (jobptr->pgid == argv[1]) {
+			  continue_job(jobptr);
+		  }
+		  else {
+			  jobptr = jobptr->next;
+		  }	  
+	  }
   }
   else if (!strcmp("fg", argv[0])) {
             /* Your code here */
+	  //need to first find the job
+	  //traverse job list and find the job
+	  //pass this job to continue job
+	  //shell should wait for process to finish before prompting again
 	  job_t* current = jobptr;
 	  while(current != NULL) {
 		  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
@@ -229,22 +232,23 @@ void new_child(job_t *j, process_t *p, bool fg)
 			  //make argv[1] negative so that any process from the job will finish
 			  //for loop for every process in the job
 			  
-			  process_t* current_process = current->first_process;
+			  process_t* current_process = current->process;
 			  while (current_process != NULL) {
-				  waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
+				  waitpid((atoi(argv[1])*(-1)), process->status, WUNTRACED)
 				  current_process = current_process->next;
 			  }
-			  
+			
 		  }
 		  else {
 			  current = current->next;
 		  }	
-		  
-	  }
-	  seize_tty(getpid());
-	  
+					  		  
+		  }
+	  //get pid returns pid of calling process
+		  //do this after wait
+	  seize_tty(getpid())
   }
-  return false;       /* not a builtin command */
+        return false;       /* not a builtin command */
 }
 
 /* Build prompt messaage */
@@ -253,7 +257,6 @@ char* promptmsg()
     /* Modify this to include pid */
   //char* returnStr = "RyanRyan dsh %d $ ", 
  int my_pid = getpid();
- //char* my_prompt = (char*) malloc(50);
  char my_prompt[50];
  strcpy(my_prompt, "dsh ");
  char convertToString[15];
@@ -261,9 +264,9 @@ char* promptmsg()
  sprintf(convertToString, "%d", my_pid);
 
  strcat(my_prompt, convertToString);
- strcat(my_prompt, " $ ");
+ strcat(my_prompt, " $");
   return my_prompt;
-
+  //return "dsh $ ";
 }
 
 int main() 
@@ -276,9 +279,9 @@ int main()
     job_t *j = NULL;
     if(!(j = readcmdline(promptmsg()))){
       if (feof(stdin)) { /* End of file (ctrl-d) */
-        fflush(stdout);
-        printf("\n");
-        exit(EXIT_SUCCESS);
+     fflush(stdout);
+     printf("\n");
+     exit(EXIT_SUCCESS);
       }
       continue; /* NOOP; user entered return or spaces with return */
     }
@@ -293,109 +296,48 @@ int main()
       process_t* temp = j->first_process;
       int argc_temp = temp->argc;
       char** argv_temp = temp->argv;
-      
+
       builtin_cmd(j, argc_temp, argv_temp);
     /* If not built-in */
         /* If job j runs in foreground */
         /* spawn_job(j,true) */
         /* else */
         /* spawn_job(j,false) */
-      if(!isBuiltIn) {
-        spawn_job(j, true);
-      }
+      spawn_job(j, false);
 
-        isBuiltIn = false;
   }
 }
 
-
-void remove_completed(job_t* j) {
-  job_t* current_job = j;
-  while (current_job != NULL) {
-    
-    current_job = current_job->next;
-  }
-}
-
-char* check_job_status(job_t* job) {
-  process_t* current_process = job->first_process;
-  while(current_process != NULL) {
-    int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
-    
-    if (status == -1) {
-      current_process->completed = true;
-      return "Completed";
-    }
-    //else if (status == 0) {
-    //  return "Completed";
-    //}
-
-    if (WIFEXITED(status)) {
-      current_process->completed = true;
-      return "Terminated normally";
-    }
-    else if (WIFSIGNALED(status)) {
-      int terminationSignal = WTERMSIG(status);
-      char first[100];
-      //char* first = (char*)malloc(100);
-      strcat(first,"Terminated by signal");
-      char str[15];
-      sprintf(str, "%d", terminationSignal);
-      strcat(first, str);
-      return first;
-    }
-    else if (WIFSTOPPED(status)) {
-      current_process->completed = false;
-      return "Stopped";
-    }
-    current_process = current_process->next;
-
-  }
-  return NULL;
-
-}
-
-void reapZombies() {
-  job_t* current = jobptr;
-  job_t* prev = NULL;
-  while (current != NULL) {
-    if (job_is_completed(current)) {
-      if (prev == NULL) {
-        current = current->next;
-        jobptr = current;
-      }
-      else {
-        prev->next = current->next;
-        //delete_job(current, jobptr);
-        current = current->next;
-      }
-    }
-    else {    
-      prev = current;
-      current = current->next;
-    }
-  }
-}
 
 void jobs(job_t* myJob){
-  job_t* curr = myJob;
-  
-  if (curr != NULL) {
+
+  if (myJob != NULL) {
 	printf("\033[1;32mCURRENT JOBS\033[0m\n");
 	printf("PID\tSTATUS\tNAME\n");
-  
-	  while(curr != NULL) {
-		  int stat = (curr->first_process)->status;
-		  printf("%d \t", (int) curr->pgid);
-		  printf("%s \t", check_job_status(curr));
-		  printf("%s \n", curr->commandinfo);
-		  curr = curr->next;
-    }
+
+	while(myJob != NULL) {
+		int stat = (myJob->first_process)->status;
+		printf("%d \t", (int) myJob->pgid);
+		printf("%d \t", stat);
+		printf("%s \n", myJob->commandinfo);
+		myJob = myJob->next;
+	}
   }
   else {
-	  printf("No current jobs\n");
+	printf("No current jobs\n");
+  } 
+  /* if(p->completed){
+    delete_job(j, jobptr);
+    job_t* myjob = readcmdline(promptmsg());
   }
-  
+  */
+
+}
+
+void reapZombieProcesses() {
+
+//waitpid()
+
 }
 
 void write_error(char* errorMsg, char** argv) {
@@ -416,12 +358,12 @@ int io_handler(char* file, char** argv, int inOutBit) {
   //if its input <
   if (inOutBit == 0) {
     fileDes = open(file, O_RDONLY);
-    dup2(fileDes, STDIN_FILENO); //pointing 0 at fileDes
+    dup2(fileDes, 0);
   }
   //if it output >
   else if (inOutBit == 1) {
    fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
-   dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
+   dup2(fileDes, 1);
   }
   else {
     //error case
@@ -440,34 +382,4 @@ void compile_string(process_t* p){
   execvp(example, NULL);
 }
 
-
-void pipelining(char** argv, int argc){
-  printf("got into pipeling\n");
-  int fd[2];
-  pid_t pid;
-  pipe(fd);
-  if(argc != 2) {
-      error("wrong number of arguments");
-      exit(EXIT_FAILURE);
-  }
-  switch (pid = fork()){
-    printf("got into fork\n");
-    case -1:
-      error("pipe");
-      exit(EXIT_FAILURE);
-
-    case 0: /* child process  */
-      printf("got into child\n");
-      close(fd[1]);
-      dup2(fd[0], STDIN_FILENO);
-      close(fd[0]);
-      execvp(argv[0], argv); //Need to figure out this line
-    default:
-      wait(NULL);
-      printf("got into default\n");
-      close(fd[0]);
-      dup2(fd[1], STDOUT_FILENO);
-      close(fd[1]);
-  }
-}
 
