@@ -100,7 +100,7 @@ void new_child(job_t *j, process_t *p, bool fg)
     }
     else if (p->next != NULL) {
       printf("pipe here\n");
-      pipelining(p->argv, p->argc);
+      pipelining(p->argv, p->argc, p->next);
     }
     else {
       struct stat s;
@@ -135,6 +135,8 @@ void new_child(job_t *j, process_t *p, bool fg)
       perror(commandName);
               // NOT REACHED  
       */
+      input = pipe[0];
+
     }
 
     exit(EXIT_FAILURE);
@@ -349,49 +351,6 @@ void compile_string(process_t* p){
   strcat(example, p->argv[0]);
   strcat(example, " -o devil");       
   execvp(example, NULL);
-}
-
-
-
-
-void pipelining(char** argv, int argc){
-  printf("got into pipeling\n");
-  int fd[2];
-  pid_t pid;
-  pipe(fd);
-
-  if(pipe(fd[2])){
-    perror("error here");
-    exit(EXIT_FAILURE);
-  }
-
-
-  if(argc != 2) {
-      error("wrong number of arguments");
-      exit(EXIT_FAILURE);
-  }
-
-
-  switch (pid = fork()){
-    printf("got into fork\n");
-    case -1:
-      error("pipe");
-      exit(EXIT_FAILURE);
-
-    case 0: /* child process  */
-      printf("got into child\n");
-      close(fd[0]); //close the input
-      dup2(fd[1], STDOUT_FILENO);
-      close(fd[1]);   //close the output
-      execvp(argv[0], argv); //Need to figure out this line ********
-    default:
-      wait(NULL);
-      printf("got into default\n");
-      close(fd[1]);
-      dup2(fd[0], STDIN_FILENO);
-      close(fd[0]);
-      execvp(argv[1], ); //need to finish
-  }
 }
 
 
