@@ -6,12 +6,10 @@ void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for t
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void jobs();
-void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
-void pipelining(char** argv, int argc);
 void* initialize_process(job_t* j, process_t* p, int input, int output);
-
+char* build_path(process_t* p);
 job_t* jobptr;
 bool isBuiltIn;
 
@@ -133,15 +131,15 @@ void spawn_job(job_t *j, bool fg){
 }
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
-        char* path_to_execute = build_path();
-        struct stat s;
+        char* path_to_execute = build_path(p);
+        
         execvp(path_to_execute, p->argv);
 }
 
-char* build_path(){
+char* build_path(process_t* p){
         char path[MAX_LEN_FILENAME];
         char temp[MAX_LEN_FILENAME];
-
+        struct stat s;
         strcpy(temp, "/usr/bin/");
         strcat(temp, p->argv[0]);
 
@@ -151,7 +149,8 @@ char* build_path(){
             strcat(path, " -o devil");         
         }
         else if(stat(temp, &s) == 0){
-            path = temp;
+            strcpy(path, "");
+            strcat(path, temp);
         }
         else{
             strcpy(path, p->argv[0]);
