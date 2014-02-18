@@ -10,6 +10,7 @@ void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
 char* check_job_status(job_t* job);
 void pipelining(char** argv, int argc);
+void reapZombies();
 
 job_t* jobptr;
 bool isBuiltIn;
@@ -113,7 +114,6 @@ void new_child(job_t *j, process_t *p, bool fg)
       }
       else {
         execvp(p->argv[0], p->argv);
-        
         //otherwise statement must be added 
         char commandName[500];
         strcpy(commandName, p->argv[0]);
@@ -146,6 +146,7 @@ void new_child(job_t *j, process_t *p, bool fg)
             /* establish child process group */
     wait(NULL);
     p->pid = pid;
+
     set_child_pgid(j, p); 
     if(endswith(p->argv[0],".c")) {
       pid_t test;
@@ -200,9 +201,9 @@ void new_child(job_t *j, process_t *p, bool fg)
     exit(EXIT_SUCCESS);
   }
   else if (!strcmp("jobs", argv[0])) {
-		jobs(jobptr);
-            /* Your code here */
-            //jobs(argv[0]);
+    reapZombies();
+    jobs(jobptr);
+    //reapZombies();
     return true;
   }
   else if (!strcmp("cd", argv[0])) {
@@ -296,6 +297,7 @@ char* check_job_status(job_t* job) {
     int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
     
     if (status == -1) {
+      current_process->completed = true;
       return "Completed";
     }
     //else if (status == 0) {
@@ -327,35 +329,47 @@ char* check_job_status(job_t* job) {
 
 }
 
-void jobs(job_t* myJob){
-
-  if (myJob != NULL) {
-	printf("\033[1;32mCURRENT JOBS\033[0m\n");
-	printf("PID\tSTATUS\tNAME\n");
-
-	while(myJob != NULL) {
-		int stat = (myJob->first_process)->status;
-		printf("%d \t", (int) myJob->pgid);
-		printf("%s \t", check_job_status(myJob));
-		printf("%s \n", myJob->commandinfo);
-		myJob = myJob->next;
-	}
+void reapZombies() {
+  job_t* current = jobptr;
+  job_t* prev = NULL;
+  while (current != NULL) {
+    if (job_is_completed(current)) {
+      if (prev == NULL) {
+        current = current->next;
+        jobptr = current;
+      }
+      else {
+        prev->next = current->next;
+        //delete_job(current, jobptr);
+        current = current->next;
+      }
+    }
+    else {    
+      prev = current;
+      current = current->next;
+    }
   }
-  else {
-	printf("No current jobs\n");
-  } 
-  /* if(p->completed){
-    delete_job(j, jobptr);
-    job_t* myjob = readcmdline(promptmsg());
-  }
-  */
-
 }
 
-void reapZombieProcesses() {
-
-//waitpid()
-
+void jobs(job_t* myJob){
+  job_t* curr = myJob;
+  
+  if (curr != NULL) {
+	printf("\033[1;32mCURRENT JOBS\033[0m\n");
+	printf("PID\tSTATUS\tNAME\n");
+  
+	  while(curr != NULL) {
+		  int stat = (curr->first_process)->status;
+		  printf("%d \t", (int) curr->pgid);
+		  printf("%s \t", check_job_status(curr));
+		  printf("%s \n", curr->commandinfo);
+		  curr = curr->next;
+    }
+  }
+  else {
+	  printf("No current jobs\n");
+  }
+  
 }
 
 void write_error(char* errorMsg, char** argv) {
@@ -399,8 +413,6 @@ void compile_string(process_t* p){
   strcat(example, " -o devil");       
   execvp(example, NULL);
 }
-
-
 
 
 void pipelining(char** argv, int argc){
