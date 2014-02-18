@@ -8,7 +8,7 @@ void jobs();
 void compile_string(process_t* p);
 void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
-void pipelining(char** argv);
+void pipelining(char** argv, int argc);
 
 job_t* jobptr;
 bool isBuiltIn;
@@ -93,15 +93,14 @@ void new_child(job_t *j, process_t *p, bool fg)
 
     }
     else if (p->ofile != NULL) {
-      printf("young and rich\n");
       io_handler(p->ofile, p->argv, 1);
     }
     else if(p->ifile != NULL) {
       io_handler(p->ifile, p->argv, 0);
     }
     else if (p->next != NULL) {
-      printf("pipe here");
-      pipelining(p->argv);
+      printf("pipe here\n");
+      pipelining(p->argv, p->argc);
     }
     else {
       struct stat s;
@@ -231,7 +230,7 @@ char* promptmsg()
  sprintf(convertToString, "%d", my_pid);
 
  strcat(my_prompt, convertToString);
- strcat(my_prompt, " $");
+ strcat(my_prompt, " $ ");
   return my_prompt;
 
 }
@@ -328,12 +327,12 @@ int io_handler(char* file, char** argv, int inOutBit) {
   //if its input <
   if (inOutBit == 0) {
     fileDes = open(file, O_RDONLY);
-    dup2(fileDes, 0); //pointing 0 at fileDes
+    dup2(fileDes, STDIN_FILENO); //pointing 0 at fileDes
   }
   //if it output >
   else if (inOutBit == 1) {
    fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
-   dup2(fileDes, 1); //redirecting the standout to fileDes
+   dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
   }
   else {
     //error case
@@ -355,12 +354,15 @@ void compile_string(process_t* p){
 
 
 
-void pipelining(char** argv){
+void pipelining(char** argv, int argc){
   printf("got into pipeling\n");
   int fd[2];
   pid_t pid;
-  pipe(fd); 
-
+  pipe(fd);
+  if(argc != 2) {
+      error("wrong number of arguments");
+      exit(EXIT_FAILURE);
+  }
   switch (pid = fork()){
     printf("got into fork\n");
     case -1:
@@ -369,12 +371,16 @@ void pipelining(char** argv){
 
     case 0: /* child process  */
       printf("got into child\n");
-      dup2(fd[0], STDIN_FILENO); 
-      execvp(argv[0], argv); 
+      close(fd[1]);
+      dup2(fd[0], STDIN_FILENO);
+      close(fd[0]);
+      execvp(argv[0], argv); //Need to figure out this line
     default:
-    printf("got into default\n");
       wait(NULL);
-      dup2(fd[1], STOUT_FILENO); 
+      printf("got into default\n");
+      close(fd[0]);
+      dup2(fd[1], STDOUT_FILENO);
+      close(fd[1]);
   }
 }
 
