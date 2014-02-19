@@ -147,8 +147,9 @@ void spawn_job(job_t *j, bool fg){
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
+        
         char * test = path_to_execute;
-       // DEBUG("%s", path_to_execute);
+        //DEBUG("%s", path_to_execute);
        // printf("%d ------- %d\n",input, output);
         
        
@@ -162,32 +163,26 @@ void* initialize_process(job_t* j, process_t* p, int input, int output){
             dup2(output, STDOUT_FILENO);     
             close(output);
         }
-       // DEBUG("%s", path_to_execute);
-        execvp(p->argv[0], p->argv);
+       execvp(path_to_execute, p->argv);
 }
 
 char* build_path(process_t* p){
         char path[MAX_LEN_FILENAME];
-        char temp[MAX_LEN_FILENAME];
         struct stat s;
-        strcpy(temp, "/usr/bin/");
-        strcat(temp, p->argv[0]);
+        strcat(path, "/usr/bin/");
+        strcat(path, p->argv[0]); 
 
         if(endswith(p->argv[0], ".c")){
-            strcpy(path, "gcc ");
-            strcat(path, p->argv[0]);
-            strcat(path, " -o devil");         
-        }
-        else if(stat(temp, &s) == 0){
-            strcpy(path, "");
-            strcat(path, temp);
+          char example[MAX_LEN_FILENAME];
+          strcpy(example, "gcc ");
+          strcat(example, p->argv[0]);
+          strcat(example, " -o devil");
+          execvp(example, p->argv);
+          return "./devil";
         }
         else{
-            strcpy(path, p->argv[0]);
-            //strcat(path, " is an invalid command, new child should have done an exec");
+          return p->argv[0];
         }
-
-        return path;
 
 }
 
