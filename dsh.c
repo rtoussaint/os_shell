@@ -10,6 +10,8 @@ void write_error();
 int io_handler(char* file, char** argv, int inOutBit);
 void* initialize_process(job_t* j, process_t* p, int input, int output);
 char* build_path(process_t* p);
+char* check_job_status(job_t* job);
+void reapZombies();
 job_t* jobptr;
 bool isBuiltIn;
 
@@ -141,7 +143,7 @@ void spawn_job(job_t *j, bool fg){
 
         int status;
         
-        waitpid(-1, &status, WUNTRACED);
+        waitpid(pid, NULL, WUNTRACED);
         seize_tty(getpid());
 }
 
@@ -185,18 +187,7 @@ char* build_path(process_t* p){
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-    /* Sends SIGCONT signal to wake up the blocked job */
+/* Sends SIGCONT signal to wake up the blocked job */
 void continue_job(job_t *j) {
         if(kill(-j->pgid, SIGCONT) < 0)
             perror("kill(SIGCONT)");
@@ -225,9 +216,9 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
             exit(EXIT_SUCCESS);
         }
         else if (!strcmp("jobs", argv[0])) {
-            jobs(jobptr);
-            /* Your code here */
-            //jobs(argv[0]);
+            reapZombies();
+            jobs(jobptr);    
+            isBuiltIn = true;
             return true;
         }
         else if (!strcmp("cd", argv[0])) {
@@ -237,10 +228,48 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
             }
         }
         else if (!strcmp("bg", argv[0])) {
+            isBuiltIn = true;
             /* Your code here */
+              job_t* current = jobptr;
+              while(current != NULL) {
+                  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
+                  if (current->pgid == atoi(argv[1])) {
+                      continue_job(current);
+                      //make argv[1] negative so that any process from the job will finish
+                      //for loop for every process in the job
+                      
+                      return true; 
+                  }
+                  else {
+                      current = current->next;
+                  } 
+
+              }
         }
         else if (!strcmp("fg", argv[0])) {
+            isBuiltIn = true;
             /* Your code here */
+              job_t* current = jobptr;
+              while(current != NULL) {
+                  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
+                  if (current->pgid == atoi(argv[1])) {
+                      continue_job(current);
+                      //make argv[1] negative so that any process from the job will finish
+                      //for loop for every process in the job
+
+                      process_t* current_process = current->first_process;
+                      while (current_process != NULL) {
+                          waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
+                          current_process = current_process->next;
+                      }
+                      return true; 
+                  }
+                  else {
+                      current = current->next;
+                  } 
+
+              }
+              seize_tty(getpid());
         }
         return false;       /* not a builtin command */
 }
@@ -302,36 +331,82 @@ int main() {
         }
     }
 
-
-    void jobs(job_t* myJob){
-
-        if (myJob != NULL) {
-            printf("\033[1;32mCURRENT JOBS\033[0m\n");
-            printf("PID\tSTATUS\tNAME\n");
-
-            while(myJob != NULL) {
-                int stat = (myJob->first_process)->status;
-                printf("%d \t", (int) myJob->pgid);
-                printf("%d \t", stat);
-                printf("%s \n", myJob->commandinfo);
-                myJob = myJob->next;
-            }
+    char* check_job_status(job_t* job) {
+      process_t* current_process = job->first_process;
+      while(current_process != NULL) {
+        int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
+        
+        if (status == -1) {
+          current_process->completed = true;
+          return "Completed";
         }
-        else {
-            printf("No current jobs\n");
-        } 
-        /* if(p->completed){
-    delete_job(j, jobptr);
-    job_t* myjob = readcmdline(promptmsg());
-  }
-         */
+
+        if (WIFEXITED(status)) {
+          current_process->completed = true;
+          return "Terminated normally";
+        }
+        else if (WIFSIGNALED(status)) {
+          int terminationSignal = WTERMSIG(status);
+          char first[100];
+          //char* first = (char*)malloc(100);
+          strcat(first,"Terminated by signal");
+          char str[15];
+          sprintf(str, "%d", terminationSignal);
+          strcat(first, str);
+          return first;
+        }
+        else if (WIFSTOPPED(status)) {
+          current_process->completed = false;
+          return "Stopped";
+        }
+        current_process = current_process->next;
+
+      }
+      return NULL;
 
     }
 
-    void reapZombieProcesses() {
 
-        //waitpid()
+    void reapZombies() {
+        job_t* current = jobptr;
+        job_t* prev = NULL;
+        while (current != NULL) {
+            if (job_is_completed(current)) {
+              if (prev == NULL) {
+                current = current->next;
+                jobptr = current;
+              }
+              else {
+                prev->next = current->next;
+                //delete_job(current, jobptr);
+                current = current->next;
+              }
+            }
+            else {    
+              prev = current;
+              current = current->next;
+            }
+        }
+    }
 
+    void jobs(job_t* myJob){
+      job_t* curr = myJob;
+      
+      if (curr != NULL) {
+        printf("\033[1;32mCURRENT JOBS\033[0m\n");
+        printf("PID\tSTATUS\t\tNAME\n");
+      
+          while(curr != NULL) {
+              int stat = (curr->first_process)->status;
+              printf("%d \t", (int) curr->pgid);
+              printf("%s \t", check_job_status(curr));
+              printf("%s \n", curr->commandinfo);
+              curr = curr->next;
+        }
+      }
+      else {
+          printf("No current jobs\n");
+      }
     }
 
     void write_error(char* errorMsg, char** argv) {
