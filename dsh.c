@@ -176,8 +176,9 @@ void new_child(job_t *j, process_t *p, bool fg)
 /* Sends SIGCONT signal to wake up the blocked job */
  void continue_job(job_t *j) 
  {
-   if(kill(-j->pgid, SIGCONT) < 0)
+   if(kill(-j->pgid, SIGCONT) < 0){
     perror("kill(SIGCONT)");
+   }
 }
 
 
@@ -234,7 +235,7 @@ void new_child(job_t *j, process_t *p, bool fg)
 				  waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
 				  current_process = current_process->next;
 			  }
-			  
+			  return true; 
 		  }
 		  else {
 			  current = current->next;
