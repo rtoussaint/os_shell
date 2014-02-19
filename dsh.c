@@ -62,7 +62,7 @@ void spawn_job(job_t *j, bool fg){
     process_t *p; //structure for a process
     int input = STDIN_FILENO;
     int output = STDOUT_FILENO;
-    int pipe[2];
+    int pipefd[2];
 
     //add this job to the job list
     if(jobptr == NULL){
@@ -115,10 +115,11 @@ void spawn_job(job_t *j, bool fg){
                 output = STDOUT_FILENO; 
             }
             //at this point its a pipe
-            dup2(pipe[0], STDIN_FILENO); //copy file descriptors
-            close(pipe[0]);
-            dup2(pipe[1], STDOUT_FILENO);
-            close(pipe[1]);
+            if(p->next !=NULL) {
+              pipe(pipefd);
+              input =  pipefd[0]; //set file descriptors
+              output = pipefd[1];
+            }
 
             initialize_process(j, p, input, output);
 
@@ -126,14 +127,23 @@ void spawn_job(job_t *j, bool fg){
             wait(NULL);
             p->pid = pid;
             set_child_pgid(j, p);
-            input = pipe[0];
+            input = pipefd[0];
     }
 }
 }
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
+        char * test = path_to_execute;
+        printf("%d ------- %d\n",input, output);
         
+        if(p->next != NULL){
+          printf("GOT HERE\n");
+          dup2(input, STDIN_FILENO);
+          dup2(output, STDOUT_FILENO);
+        }
+        //need to close?
+        printf("%d ------- %d\n",input, output);
         execvp(path_to_execute, p->argv);
 }
 
