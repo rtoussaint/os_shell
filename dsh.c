@@ -40,6 +40,7 @@ void new_child(job_t *j, process_t *p, bool fg)
 
     /* also establish child process group in child to avoid race (if parent has not done it yet). */
     set_child_pgid(j, p);
+	printf("process pid: %d\n", p->pid);
 
     if(fg) // if fg is set
         seize_tty(j->pgid); // assign the terminal
@@ -235,9 +236,6 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
                   //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
                   if (current->pgid == atoi(argv[1])) {
                       continue_job(current);
-                      //make argv[1] negative so that any process from the job will finish
-                      //for loop for every process in the job
-                      
                       return true; 
                   }
                   else {
@@ -250,6 +248,18 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
             isBuiltIn = true;
             /* Your code here */
               job_t* current = jobptr;
+			if (argv[1] == NULL) {
+				printf("hi\n");
+				if (current->next == NULL) {
+					printf("hi 2\n");
+					continue_job(current);
+					
+					return true;
+				}
+				else {
+					current = current->next;
+				}
+			}
               while(current != NULL) {
                   //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
                   if (current->pgid == atoi(argv[1])) {
