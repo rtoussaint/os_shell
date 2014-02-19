@@ -78,72 +78,89 @@ void spawn_job(job_t *j, bool fg){
 
         /* YOUR CODE HERE? */
         /* Builtin commands are already taken care earlier */
+        if(p->next != NULL) {
+            pipe(pipefd);
+            output = pipefd[1];
+        }
+        else {
+            output = STDOUT_FILENO;
+        }
 
         switch (pid = fork()) { //create new process with fork
 
 
-        case -1: /* fork failure */
-            perror("fork");
-            exit(EXIT_FAILURE);
+            case -1: /* fork failure */
+                perror("fork");
+                exit(EXIT_FAILURE);
+                break;
+            case 0: /* child process  */
+                p->pid = getpid();  //get id from the new child     
+                new_child(j, p, fg);
 
-        case 0: /* child process  */
-            p->pid = getpid();  //get id from the new child     
-            new_child(j, p, fg);
+                if(p == j->first_process){
 
-            if(p == j->first_process){
+                    if(p->ifile != NULL){
+                        io_handler(p->ifile, p->argv, STDIN_FILENO);
+                    }
+                    else{
+                        input = STDIN_FILENO;
+                    }
 
-                if(p->ifile != NULL){
-                    io_handler(p->ifile, p->argv, STDIN_FILENO);
                 }
-                // else if(p->next != NULL){ //the next is not null so it is a pipeline
-                //   input = pipe[0];
-                // }
-
-            }
-            else{
-                input = STDIN_FILENO;
-            }
-            if(p->next == NULL){
-                if (p->ofile != NULL) {
-                    io_handler(p->ofile, p->argv, STDOUT_FILENO);
+                if(p->next == NULL){
+                    if (p->ofile != NULL) {
+                        io_handler(p->ofile, p->argv, STDOUT_FILENO);
+                    }
+                    else{
+                        output = STDOUT_FILENO; 
+                    }
                 }
-                else{
-                    output = STDOUT_FILENO; 
+
+                initialize_process(j, p, input, output);
+                return;
+                break;
+            default: 
+                p->pid = pid;
+                set_child_pgid(j, p);
+             //   printf("CHANGE INPUT: %d\n", pipefd[0]);
+                if (p->next != NULL) {
+                    close(pipefd[1]);
                 }
-            }
-            else{
-                output = STDOUT_FILENO; 
-            }
-            //at this point its a pipe
-            if(p->next !=NULL) {
-              pipe(pipefd);
-              input =  pipefd[0]; //set file descriptors
-              output = pipefd[1];
-            }
 
-            initialize_process(j, p, input, output);
+                break;
+        }
+        if (input != STDIN_FILENO) {
+            close(input);
+        }
 
-        default: 
-            wait(NULL);
-            p->pid = pid;
-            set_child_pgid(j, p);
-            input = pipefd[0];
+        if (output != STDOUT_FILENO) {
+            close(output);
+        }
+        input = pipefd[0];
+
     }
-}
+        int status;
+        waitpid(-1, &status, WUNTRACED);
+        seize_tty(getpid());
 }
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
         char * test = path_to_execute;
-        printf("%d ------- %d\n",input, output);
+       // printf("%d ------- %d\n",input, output);
         
-        if(p->next != NULL){
-          printf("GOT HERE\n");
-          dup2(input, STDIN_FILENO);
-          dup2(output, STDOUT_FILENO);
+       
+        if (input != STDIN_FILENO) {
+            //DEBUG("pipe in");
+            dup2(input, STDIN_FILENO);      
+            close(input);
         }
-        //need to close?
-        printf("%d ------- %d\n",input, output);
+        if (output != STDOUT_FILENO) {
+            //DEBUG("pipe out");
+            dup2(output, STDOUT_FILENO);     
+            close(output);
+        }
+        //DEBUG("%s", p->argv[1]);
         execvp(path_to_execute, p->argv);
 }
 
@@ -165,7 +182,7 @@ char* build_path(process_t* p){
         }
         else{
             strcpy(path, p->argv[0]);
-            strcat(path, " is an invalid command, new child should have done an exec");
+            //strcat(path, " is an invalid command, new child should have done an exec");
         }
 
         return path;
@@ -282,7 +299,7 @@ int main() {
             /* else */
             /* spawn_job(j,false) */
             if(!isBuiltIn) {
-                spawn_job(j, false);
+                spawn_job(j, true);
             }
 
             isBuiltIn = false;
