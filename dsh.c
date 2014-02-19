@@ -119,7 +119,7 @@ void new_child(job_t *j, process_t *p, bool fg)
         strcat(commandName, " is an invalid command, new child should have done an exec");
                                     
         write_error(commandName);
-        perror(commandName);  
+        //perror(commandName);
         
       }
 
@@ -221,7 +221,8 @@ void new_child(job_t *j, process_t *p, bool fg)
             /* Your code here */
   }
   else if (!strcmp("fg", argv[0])) {
-            /* Your code here */
+    isBuiltIn = true;
+    /* Your code here */
 	  job_t* current = jobptr;
 	  while(current != NULL) {
 		  //argv[1] is a pointer to the string that describes the pgid -- need to cast (atoi)
@@ -383,7 +384,7 @@ void jobs(job_t* myJob){
   
   if (curr != NULL) {
 	printf("\033[1;32mCURRENT JOBS\033[0m\n");
-	printf("PID\tSTATUS\tNAME\n");
+	printf("PID\tSTATUS\t\tNAME\n");
   
 	  while(curr != NULL) {
 		  int stat = (curr->first_process)->status;
