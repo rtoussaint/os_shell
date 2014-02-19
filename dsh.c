@@ -137,9 +137,10 @@ void spawn_job(job_t *j, bool fg){
             close(output);
         }
         input = pipefd[0];
-
     }
+
         int status;
+        
         waitpid(-1, &status, WUNTRACED);
         seize_tty(getpid());
 }
@@ -147,6 +148,7 @@ void spawn_job(job_t *j, bool fg){
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
         char * test = path_to_execute;
+       // DEBUG("%s", path_to_execute);
        // printf("%d ------- %d\n",input, output);
         
        
@@ -160,8 +162,8 @@ void* initialize_process(job_t* j, process_t* p, int input, int output){
             dup2(output, STDOUT_FILENO);     
             close(output);
         }
-        //DEBUG("%s", p->argv[1]);
-        execvp(path_to_execute, p->argv);
+       // DEBUG("%s", path_to_execute);
+        execvp(p->argv[0], p->argv);
 }
 
 char* build_path(process_t* p){
