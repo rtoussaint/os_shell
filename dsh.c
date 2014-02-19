@@ -342,8 +342,9 @@ int main() {
         }
 
         if (WIFEXITED(status)) {
-          current_process->completed = true;
-          return "Terminated normally";
+          current_process->completed = false;
+		  return "Stopped";
+          //return "Terminated normally";
         }
         else if (WIFSIGNALED(status)) {
           int terminationSignal = WTERMSIG(status);
