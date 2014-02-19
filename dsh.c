@@ -152,7 +152,6 @@ void* initialize_process(job_t* j, process_t* p, int input, int output){
         //DEBUG("%s", path_to_execute);
        // printf("%d ------- %d\n",input, output);
         
-       
         if (input != STDIN_FILENO) {
             //DEBUG("pipe in");
             dup2(input, STDIN_FILENO);      
@@ -354,11 +353,13 @@ int main() {
         if (inOutBit == 0) {
             fileDes = open(file, O_RDONLY);
             dup2(fileDes, STDIN_FILENO); //pointing 0 at fileDes
+            return 0;
         }
         //if it output >
         else if (inOutBit == 1) {
             fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
             dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
+            return 0;
         }
         else {
             //error case
