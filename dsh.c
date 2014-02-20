@@ -1,8 +1,8 @@
-
 #include "dsh.h"
 #include "time.h" //should go in header, but not sure if header is being turned in
 
-void seize_tty(pid_t callingprocess_pgid); /* Grab control of the terminal for the calling process pgid.  */
+void seize_tty(pid_t callingprocess_pgid); /* Grab control of the
+terminal for the calling process pgid.  */
 void continue_job(job_t *j); /* resume a stopped job */
 void spawn_job(job_t *j, bool fg); /* spawn a new job */
 void jobs();
@@ -33,12 +33,13 @@ void new_child(job_t *j, process_t *p, bool fg)
     /* Put the process into the process group and give the process
      * group the terminal, if appropriate.  This has to be done both by
      * the dsh and in the individual child processes because of
-     * potential race conditions.  
+     * potential race conditions.
      * */
 
     p->pid = getpid();
 
-    /* also establish child process group in child to avoid race (if parent has not done it yet). */
+    /* also establish child process group in child to avoid race (if
+parent has not done it yet). */
     set_child_pgid(j, p);
 
     if(fg) // if fg is set
@@ -48,36 +49,25 @@ void new_child(job_t *j, process_t *p, bool fg)
     signal(SIGTTOU, SIG_DFL);
 }
 
-/* Spawning a process with job control. fg is true if the 
- * newly-created process is to be placed in the foreground. 
- * (This implicitly puts the calling process in the background, 
- * so watch out for tty I/O after doing this.) pgid is -1 to 
- * create a new job, in which case the returned pid is also the 
- * pgid of the new job.  Else pgid specifies an existing job's 
- * pgid: this feature is used to start the second or 
+/* Spawning a process with job control. fg is true if the
+ * newly-created process is to be placed in the foreground.
+ * (This implicitly puts the calling process in the background,
+ * so watch out for tty I/O after doing this.) pgid is -1 to
+ * create a new job, in which case the returned pid is also the
+ * pgid of the new job.  Else pgid specifies an existing job's
+ * pgid: this feature is used to start the second or
  * subsequent processes in a pipeline.
  * */
 
 void spawn_job(job_t *j, bool fg){
-
     pid_t pid; //process id
     process_t *p; //structure for a process
     int input = STDIN_FILENO;
     int output = STDOUT_FILENO;
     int pipefd[2];
 
-    //add this job to the job list
-    if(jobptr == NULL){
-        jobptr = j; //point to the new job
-    }
-    else{
-        job_t* lastJPtr = find_last_job(jobptr);
-        lastJPtr->next = j; //add to the end
-    }
-
 
     for(p = j->first_process; p; p = p->next) {
-
         /* YOUR CODE HERE? */
         /* Builtin commands are already taken care earlier */
         if(p->next != NULL) {
@@ -96,7 +86,7 @@ void spawn_job(job_t *j, bool fg){
                 exit(EXIT_FAILURE);
                 break;
             case 0: /* child process  */
-                p->pid = getpid();  //get id from the new child     
+                p->pid = getpid();  //get id from the new child
                 new_child(j, p, fg);
 
                 if(p == j->first_process){
@@ -114,16 +104,19 @@ void spawn_job(job_t *j, bool fg){
                         io_handler(p->ofile, p->argv, STDOUT_FILENO);
                     }
                     else{
-                        output = STDOUT_FILENO; 
+                        output = STDOUT_FILENO;
                     }
                 }
 
                 initialize_process(j, p, input, output);
                 return;
                 break;
-            default: 
+            default:
                 p->pid = pid;
                 set_child_pgid(j, p);
+                if(endswith(p->argv[0], ".c")){
+                    execvp("./devil", p->argv);
+                }
              //   printf("CHANGE INPUT: %d\n", pipefd[0]);
                 if (p->next != NULL) {
                     close(pipefd[1]);
@@ -142,44 +135,40 @@ void spawn_job(job_t *j, bool fg){
     }
 
         int status;
-        
+
         waitpid(pid, NULL, WUNTRACED);
         seize_tty(getpid());
 }
 
 void* initialize_process(job_t* j, process_t* p, int input, int output){
         char* path_to_execute = build_path(p);
-        
+
         char * test = path_to_execute;
         //DEBUG("%s", path_to_execute);
        // printf("%d ------- %d\n",input, output);
-        
+
         if (input != STDIN_FILENO) {
             //DEBUG("pipe in");
-            dup2(input, STDIN_FILENO);      
+            dup2(input, STDIN_FILENO);
             close(input);
         }
         if (output != STDOUT_FILENO) {
             //DEBUG("pipe out");
-            dup2(output, STDOUT_FILENO);     
+            dup2(output, STDOUT_FILENO);
             close(output);
         }
        execvp(path_to_execute, p->argv);
 }
 
 char* build_path(process_t* p){
-        char path[MAX_LEN_FILENAME];
-        struct stat s;
-        strcat(path, "/usr/bin/");
-        strcat(path, p->argv[0]); 
 
         if(endswith(p->argv[0], ".c")){
           char example[MAX_LEN_FILENAME];
           strcpy(example, "gcc ");
           strcat(example, p->argv[0]);
           strcat(example, " -o devil");
-          execvp(example, p->argv);
-          return "./devil";
+          printf("example: %s\n",example );
+          return example;
         }
         else{
           return p->argv[0];
@@ -194,9 +183,9 @@ void continue_job(job_t *j) {
 }
 
 
-    /* 
+    /*
      * builtin_cmd - If the user has typed a built-in command then execute
-     * it immediately.  
+     * it immediately.
      */
 bool builtin_cmd(job_t *last_job, int argc, char **argv) {
 
@@ -217,13 +206,13 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
         }
         else if (!strcmp("jobs", argv[0])) {
             reapZombies();
-            jobs(jobptr);    
+            jobs(jobptr);
             isBuiltIn = true;
             return true;
         }
         else if (!strcmp("cd", argv[0])) {
             if(argc == 2) {
-                chdir(argv[1]); 
+                chdir(argv[1]);
                 isBuiltIn = true;
             }
         }
@@ -237,12 +226,12 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
                       continue_job(current);
                       //make argv[1] negative so that any process from the job will finish
                       //for loop for every process in the job
-                      
-                      return true; 
+
+                      return true;
                   }
                   else {
                       current = current->next;
-                  } 
+                  }
 
               }
         }
@@ -262,11 +251,11 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
                           waitpid((atoi(argv[1])*(-1)), &(current_process->status), WUNTRACED);
                           current_process = current_process->next;
                       }
-                      return true; 
+                      return true;
                   }
                   else {
                       current = current->next;
-                  } 
+                  }
 
               }
               seize_tty(getpid());
@@ -277,7 +266,7 @@ bool builtin_cmd(job_t *last_job, int argc, char **argv) {
     /* Build prompt messaage */
 char* promptmsg() {
         /* Modify this to include pid */
-        //char* returnStr = "RyanRyan dsh %d $ ", 
+        //char* returnStr = "RyanRyan dsh %d $ ",
         int my_pid = getpid();
         char my_prompt[50];
         strcpy(my_prompt, "dsh ");
@@ -306,28 +295,49 @@ int main() {
                 continue; /* NOOP; user entered return or spaces with return */
             }
 
-            /* Only for debugging purposes to show parser output; turn off in the
+            /* Only for debugging purposes to show parser output; turn
+off in the
              * final code */
             //if(PRINT_INFO) print_job(j);
 
             /* Your code goes here */
-            /* You need to loop through jobs list since a command line can contain ;*/
-            /* Check for built-in commands */
-            process_t* temp = j->first_process;
-            int argc_temp = temp->argc;
-            char** argv_temp = temp->argv;
+                //add this job to the job list
+    if(jobptr == NULL){
+        jobptr = j; //point to the new job
+    }
+    else{
+        job_t* lastJPtr = find_last_job(jobptr);
+        lastJPtr->next = j; //add to the end
+    }
 
-            builtin_cmd(j, argc_temp, argv_temp);
-            /* If not built-in */
-            /* If job j runs in foreground */
-            /* spawn_job(j,true) */
-            /* else */
-            /* spawn_job(j,false) */
-            if(!isBuiltIn) {
-                spawn_job(j, true);
+    job_t* job_temp = j;
+            /* You need to loop through jobs list since a command line
+can contain ;*/
+                while(job_temp != NULL) {
+                    /* Check for built-in commands */
+                    process_t* temp = j->first_process;
+                    int argc_temp = temp->argc;
+                    char** argv_temp = temp->argv;
+
+                    builtin_cmd(j, argc_temp, argv_temp);
+                    /* If not built-in */
+                    /* If job j runs in foreground */
+                    /* spawn_job(j,true) */
+                    /* else */
+                    /* spawn_job(j,false) */
+                    if(!isBuiltIn) {
+                        if(j->bg){
+                            spawn_job(job_temp, false);  
+                        }
+                        else{
+                            spawn_job(job_temp, true);
+
+                        }
+                    }
+
+                    isBuiltIn = false;
+                    job_temp = job_temp->next;
             }
-
-            isBuiltIn = false;
         }
     }
 
@@ -335,7 +345,7 @@ int main() {
       process_t* current_process = job->first_process;
       while(current_process != NULL) {
         int status = waitpid(current_process->pid, &(current_process->status), WNOHANG);
-        
+
         if (status == -1) {
           current_process->completed = true;
           return "Completed";
@@ -343,7 +353,7 @@ int main() {
 
         if (WIFEXITED(status)) {
           current_process->completed = false;
-		  return "Stopped";
+ return "Stopped";
           //return "Terminated normally";
         }
         else if (WIFSIGNALED(status)) {
@@ -383,7 +393,7 @@ int main() {
                 current = current->next;
               }
             }
-            else {    
+            else {
               prev = current;
               current = current->next;
             }
@@ -392,11 +402,11 @@ int main() {
 
     void jobs(job_t* myJob){
       job_t* curr = myJob;
-      
+
       if (curr != NULL) {
         printf("\033[1;32mCURRENT JOBS\033[0m\n");
         printf("PID\tSTATUS\t\tNAME\n");
-      
+
           while(curr != NULL) {
               int stat = (curr->first_process)->status;
               printf("%d \t", (int) curr->pgid);
@@ -433,20 +443,15 @@ int main() {
         }
         //if it output >
         else if (inOutBit == 1) {
-            fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777); 
+            fileDes = open(file, O_APPEND | O_WRONLY | O_CREAT, 0777);
             dup2(fileDes, STDOUT_FILENO); //redirecting the standout to fileDes
             return 0;
         }
         else {
             //error case
             return 1;
-        }                  
+        }
         execvp(argv[0], argv);
         close(fileDes);
         return 0;
     }
-
-
-
-
-
