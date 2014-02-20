@@ -114,16 +114,6 @@ void spawn_job(job_t *j, bool fg){
             default:
                 p->pid = pid;
                 set_child_pgid(j, p);
-                
-
-                wait(NULL);
-
-         
-
-
-
-
-
                 if (p->next != NULL) {
                     close(pipefd[1]);
                 }
