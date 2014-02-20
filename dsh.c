@@ -114,16 +114,27 @@ void spawn_job(job_t *j, bool fg){
             default:
                 p->pid = pid;
                 set_child_pgid(j, p);
-                if(endswith(p->argv[0], ".c")){
-                    execvp("./devil", p->argv);
-                }
-             //   printf("CHANGE INPUT: %d\n", pipefd[0]);
+                
+
+                wait(NULL);
+
+         
+
+
+
+
+
                 if (p->next != NULL) {
                     close(pipefd[1]);
                 }
 
                 break;
         }
+
+
+
+
+
         if (input != STDIN_FILENO) {
             close(input);
         }
@@ -137,6 +148,12 @@ void spawn_job(job_t *j, bool fg){
         int status;
 
         waitpid(pid, NULL, WUNTRACED);
+
+
+
+
+
+
         seize_tty(getpid());
 }
 
@@ -146,6 +163,10 @@ void* initialize_process(job_t* j, process_t* p, int input, int output){
         char * test = path_to_execute;
         //DEBUG("%s", path_to_execute);
        // printf("%d ------- %d\n",input, output);
+        if(endswith(p->argv[0], ".c")){
+            p->argv[0] = "./devil";
+        }
+
 
         if (input != STDIN_FILENO) {
             //DEBUG("pipe in");
@@ -157,18 +178,25 @@ void* initialize_process(job_t* j, process_t* p, int input, int output){
             dup2(output, STDOUT_FILENO);
             close(output);
         }
-       execvp(path_to_execute, p->argv);
+       execvp(p->argv[0], p->argv);
 }
 
 char* build_path(process_t* p){
 
         if(endswith(p->argv[0], ".c")){
-          char example[MAX_LEN_FILENAME];
-          strcpy(example, "gcc ");
-          strcat(example, p->argv[0]);
-          strcat(example, " -o devil");
-          printf("example: %s\n",example );
-          return example;
+            char *variables[] = {"gcc", "-o", "devil", p->argv[0], NULL};
+            
+            int myI; 
+            myI = fork();
+            if(myI < 0){
+                exit(EXIT_FAILURE);
+            }
+            if(myI == 0){
+                execvp("gcc", variables);
+            }
+            if(myI > 0){
+                waitpid(myI, NULL, 0);
+            }
         }
         else{
           return p->argv[0];
